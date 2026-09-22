@@ -46,7 +46,7 @@ const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 export async function mgrAmbassadorsView() {
   const list = await api.mgr.ambassadors();
   const unis = [...new Set(list.map((a) => a.university).filter(Boolean))].sort();
-  const rows = (items) => (items.length ? items.map((a) => html`<tr>
+  const rows = (items) => (items.length ? html`${items.map((a) => html`<tr>
       <td><b>${fullName(a) || '—'}</b><div class="small muted">${a.email}</div></td>
       <td class="small">${a.university ? localUniversity(a.university) : '—'}<div class="muted">${a.faculty || ''}</div></td>
       <td>${miniProgress(a.progress)}</td>
@@ -55,7 +55,7 @@ export async function mgrAmbassadorsView() {
       <td class="small muted">${a.last_seen_at ? fmtDate(a.last_seen_at) : t('mgr.never')}</td>
       <td><div class="row" style="flex-wrap:nowrap;gap:.3rem"><button class="btn secondary sm" type="button" data-act="amb-view" data-id="${a.id}">${t('mgr.view')}</button>
         <button class="btn ghost sm" type="button" data-act="amb-reset" data-id="${a.id}">${t('mgr.reset_pw')}</button>
-        <button class="btn ghost sm" type="button" data-act="amb-msg" data-id="${a.id}">${t('mgr.message')}</button></div></td></tr>`)
+        <button class="btn ghost sm" type="button" data-act="amb-msg" data-id="${a.id}">${t('mgr.message')}</button></div></td></tr>`)}`
     : html`<tr><td colspan="7" class="center muted" style="padding:2rem">${t('mgr.none')}</td></tr>`);
   return {
     html: html`<div class="main-head"><h1>${t('mgr.ambassadors')}</h1><div class="grow"></div><button class="btn secondary" type="button" data-act="amb-csv">⬇ ${t('mgr.export')}</button></div>
