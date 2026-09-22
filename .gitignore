@@ -1,0 +1,13 @@
+node_modules
+.env.local
+.env
+.DS_Store
+supabase/.temp
+
+# Real attendee data (names, university, check-in times) — already imported into Supabase.
+# Never publish this to a git history; re-run scripts/../import if it needs to be re-loaded.
+/Event-CheckIn-*.xlsx
+
+# UNICEF training videos (~900MB) aren't wired into the site yet and don't belong in git —
+# host them on a video platform or object storage and link to them instead.
+/media/unicef_modules/
