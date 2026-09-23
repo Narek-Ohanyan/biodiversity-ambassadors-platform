@@ -172,6 +172,11 @@ const checkinChip = (c) => {
   if (k.verified) return html`<span class="chip pending">${t('checkin.name_only')}</span>`;
   return html`<span class="chip bad">${t('checkin.not_found')}</span>`;
 };
+const bioblitzChip = (c) => {
+  const b = c.bioblitz; if (!b) return '';
+  if (!b.dataset_loaded) return html`<span class="chip neutral">${t('bioblitz.no_data')}</span>`;
+  return b.matched ? html`<span class="chip ok">✓ ${t('bioblitz.in_list')}</span>` : html`<span class="chip bad">${t('bioblitz.not_in_list')}</span>`;
+};
 
 export async function claimsView() {
   let all = await api.mgr.claims(null);
@@ -183,7 +188,7 @@ export async function claimsView() {
     return items.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.submitted')}</th><th>${t('mgr.ambassador')}</th><th>${t('mgr.activity')}</th><th>${t('mgr.credits')}</th><th>${t('mgr.auto_check')}</th><th>${t('mgr.status')}</th><th></th></tr></thead><tbody>
       ${items.map((c) => html`<tr><td class="small">${fmtDate(c.created_at)}</td><td><b>${fullName(c) || '—'}</b><div class="small muted">${c.email}</div></td>
         <td class="small">${actName(c.activity_key)}<div class="muted">${t(`cat.${c.category}`)}</div></td><td>${c.status === 'rejected' ? '—' : c.credits}</td>
-        <td><div class="chips">${scanChip(c)}${checkinChip(c)}${c.duplicate_files ? html`<span class="chip bad">${t('scan.duplicate')}</span>` : ''}${c.auto ? html`<span class="chip info">${t('mgr.auto')}</span>` : ''}</div></td>
+        <td><div class="chips">${scanChip(c)}${checkinChip(c)}${bioblitzChip(c)}${c.duplicate_files ? html`<span class="chip bad">${t('scan.duplicate')}</span>` : ''}${c.auto ? html`<span class="chip info">${t('mgr.auto')}</span>` : ''}</div></td>
         <td><span class="chip ${c.status}">${t(`learn.${c.status}`)}</span></td>
         <td><button class="btn ${c.status === 'pending' ? '' : 'secondary'} sm" type="button" data-act="claim-review" data-id="${c.id}">${c.status === 'pending' ? t('mgr.review') : t('mgr.view')}</button></td></tr>`)}</tbody></table></div>`
       : html`<div class="empty">${t('mgr.no_claims')}</div>`;
@@ -224,6 +229,8 @@ function reviewDialog(c, onDone) {
           <dt>${t('claim.description')}</dt><dd style="white-space:pre-line">${f.description}</dd></dl>` : ''}
 
       ${c.kind === 'certificate' ? html`<h4 style="margin-top:1.2rem">${t('scan.title')}</h4><div id="scan-panel">${scanPanel(scan, c)}</div>` : ''}
+
+      ${c.activity_key === 'bioblitz' ? html`<h4 style="margin-top:1.2rem">${t('bioblitz.title')}</h4>${bioblitzPanel(c.bioblitz)}` : ''}
 
       ${c.files.length ? html`<h4 style="margin-top:1.2rem">${t('mgr.files')}</h4><div id="files-panel"><div class="loading" style="min-height:80px"><span class="spinner"></span></div></div>` : ''}
 
@@ -286,6 +293,12 @@ function checkinPanel(k) {
   if (!k.verified) return html`<div class="banner bad"><span>✕</span><div>${t('checkin.not_found_long')}</div></div>`;
   return html`<div class="banner ${k.matched_by === 'email' ? 'ok' : ''}"><span>${k.matched_by === 'email' ? '✓' : '⚠️'}</span><div>${k.matched_by === 'email' ? t('checkin.verified_long') : t('checkin.name_only_long')}</div></div>
     ${k.rows.map((r) => html`<div class="table-wrap" style="margin-bottom:.6rem"><table><tbody>${Object.entries(r.data).slice(0, 12).map(([key, v]) => html`<tr><th style="width:200px">${key}</th><td>${v}</td></tr>`)}</tbody></table></div>`)}`;
+}
+
+function bioblitzPanel(b) {
+  if (!b?.dataset_loaded) return html`<div class="banner"><span>ℹ️</span><div>${t('bioblitz.no_data_long')}</div></div>`;
+  return b.matched ? html`<div class="banner ok"><span>✓</span><div>${t('bioblitz.in_list_long')}</div></div>`
+    : html`<div class="banner bad"><span>✕</span><div>${t('bioblitz.not_in_list_long')}</div></div>`;
 }
 
 // ── Check-in datasets ───────────────────────────────────────────────────────
