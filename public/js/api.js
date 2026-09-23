@@ -98,8 +98,9 @@ export const myUnicefStatus = () => sb.rpc('my_unicef_status').then(unwrap);
 export const reportVideoProgress = (video, time, duration) =>
   sb.rpc('report_video_progress', { p_video: video, p_time: time, p_duration: duration ?? null }).then(unwrap);
 export const submitQuiz = (module, answers) => sb.rpc('submit_quiz', { p_module: module, p_answers: answers }).then(unwrap);
-export const unicefQuizQuestions = (module) =>
-  sb.from('unicef_quiz_questions').select('id,module_id,sort,question_en,question_hy,options').eq('module_id', module).order('sort').then(unwrap);
+// Goes through an RPC, not a direct table select: the answer key lives in the same row, and a plain
+// table grant can't be column-restricted after the fact (see the migration for why).
+export const unicefQuizQuestions = (module) => sb.rpc('unicef_quiz_questions_for', { p_module: module }).then(unwrap);
 
 export async function uploadCertificates(files) {
   const uid = state.user.id;
