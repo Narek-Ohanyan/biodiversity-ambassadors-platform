@@ -6,7 +6,7 @@ Public website and ambassador/manager platform for the **Biodiversity Ambassador
 
 - **Frontend**: plain HTML/CSS/JS (no build step, no framework) in [`public/`](public/), served by a tiny static file server ([`scripts/dev-server.js`](scripts/dev-server.js)).
 - **Backend**: [Supabase](https://supabase.com) — Postgres, Auth, Storage, and two Edge Functions ([`supabase/functions/`](supabase/functions/)) for certificate scanning and manager-initiated password resets. All business logic (credit rules, the Oct 15 deadline lock, auto-publication at 60 credits, notifications) lives in Postgres functions under [`supabase/migrations/`](supabase/migrations/).
-- **Media**: [`media/`](media/) — carousel/about photos and team photos, served directly by the same static server.
+- **Media**: [`media/`](media/) — carousel/about photos, team photos, and the UNICEF course videos (`unicef_modules/`, ~880MB), served directly by the same static server. The video player requires the server to support HTTP Range requests (needed to seek/resume at all) — `scripts/dev-server.js` handles this; any static host you switch to must as well (Vercel, Netlify, Cloudflare Pages and GitHub Pages all do this natively for static files).
 
 ## Running locally
 
@@ -28,5 +28,4 @@ Either way, the Supabase project itself (database, auth, storage, edge functions
 
 ## Not included in this repo
 
-- `media/unicef_modules/` — the raw UNICEF training videos (~900MB). Not yet wired into the site; host them on a video platform or object storage and link to them from `supabase/migrations` (`unicef_modules` table) instead of committing them here.
 - Any attendee/check-in spreadsheet — those contain real people's names and are imported directly into Supabase (`checkin_batches` / `checkin_records`), never committed to git.
