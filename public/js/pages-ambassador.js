@@ -216,10 +216,10 @@ function activityRow(a, ctx) {
 export async function learningView() {
   await api.refreshMe();
   const cfg = state.config;
-  const [claims, unicef, modules] = await Promise.all([api.myClaims(), api.myUnicef(), api.loadModules()]);
+  const [claims, unicefStatus] = await Promise.all([api.myClaims(), api.myUnicefStatus()]);
   const progress = state.progress;
   const locked = isLocked();
-  const ctx = { claims, progress, locked, unicefDone: unicef.length, unicefTotal: modules.length };
+  const ctx = { claims, progress, locked, unicefDone: unicefStatus.filter((m) => m.completed).length, unicefTotal: unicefStatus.length };
   const pct = Math.round((progress.total / progress.required) * 100);
   const cats = ['core', 'elective', 'soft'];
   return {
@@ -346,42 +346,156 @@ actions['claim-form'] = (el) => {
   };
 };
 
-// ── UNICEF modules ──────────────────────────────────────────────────────────
+// ── UNICEF course: sequential modules, locked videos (no skipping ahead), quiz per module ──
+// All of the actual enforcement (module order, video order, no-skip rate limiting, the quiz answer
+// key) lives server-side in report_video_progress()/submit_quiz() — this view is just the player.
+const videoUrl = (v) => `/media/unicef_modules/${v.dir}/${encodeURIComponent(v.filename)}`;
+const PING_MS = 4000;
+
 export async function unicefView() {
   await api.refreshMe();
-  const [modules, doneRows, claims] = await Promise.all([api.loadModules(), api.myUnicef(), api.myClaims()]);
-  const done = new Set(doneRows.map((r) => r.module_id));
-  const claim = claims.find((c) => c.activity_key === 'unicef' && (c.status === 'pending' || c.status === 'approved'));
-  const cat = state.progress.categories.core;
+  let status = await api.myUnicefStatus();
   const locked = isLocked();
-  const blockedNew = locked || (!claim && cat.full);
-  const pct = modules.length ? Math.round((done.size / modules.length) * 100) : 0;
+  let openModuleId = null; // null = module list; otherwise showing that module's player/quiz
+
   const L = getLang();
+  const modTitle = (m) => m[`title_${L}`];
+
+  function listHtml() {
+    const doneCount = status.filter((m) => m.completed).length;
+    const allDone = doneCount === status.length;
+    const pct = status.length ? Math.round((doneCount / status.length) * 100) : 0;
+    return html`<div class="main-head"><div><a class="small" href="/app/learning" data-link>← ${t('nav.learning')}</a><h1>${t('unicef.title')}</h1></div></div>
+      <p class="muted" style="max-width:720px">${t('unicef.intro')}</p>
+      ${allDone ? html`<div class="banner ok"><span>🎉</span><div>${t('unicef.completed', { credits: 20 })}</div></div>`
+        : locked ? html`<div class="banner bad"><span>🔒</span><div>${t('learn.closed_banner')}</div></div>` : ''}
+      <div class="card" style="margin-bottom:1.2rem"><div class="row"><b>${t('unicef.progress')}</b><span class="muted">${doneCount} / ${status.length}</span><div class="grow"></div><span class="chip credits">20 ${t('learn.credits')}</span></div>
+        <div class="bar core" style="margin-top:.6rem"><i style="width:${pct}%"></i></div></div>
+      ${status.map((m) => {
+        const videosDone = m.videos.filter((v) => v.completed).length;
+        const sub = m.completed ? t('unicef.module_done')
+          : !m.unlocked ? t('unicef.module_locked_note')
+          : m.all_videos_done ? (m.quiz.attempted && !m.quiz.passed ? t('unicef.quiz_failed_note', { score: m.quiz.score, total: m.quiz.total }) : t('unicef.quiz_ready'))
+          : t('unicef.videos_progress', { done: videosDone, total: m.videos.length });
+        return html`<div class="module ${m.completed ? 'done' : ''}">
+          <div class="num">${m.completed ? '✓' : m.unlocked ? m.sort : '🔒'}</div>
+          <div><h3 style="margin:0;font-family:var(--font-body);font-size:1.02rem">${modTitle(m)}</h3><div class="muted small">${sub}</div></div>
+          <div class="row">${m.unlocked
+            ? html`<button class="btn ${m.completed ? 'secondary' : ''} sm" type="button" data-act="uni-open" data-id="${m.id}">${m.completed ? t('unicef.review') : t('unicef.continue_module')}</button>`
+            : html`<span class="muted small">${t('unicef.locked_short')}</span>`}</div></div>`;
+      })}
+      <p class="muted small">${t('unicef.note')}</p>`;
+  }
+
+  function videoRowHtml(m, v, isCurrent) {
+    const pct = v.duration ? Math.min(100, Math.round((v.max_time / v.duration) * 100)) : (v.completed ? 100 : 0);
+    return html`<div class="module ${v.completed ? 'done' : ''} ${isCurrent ? 'current' : ''}" data-video-row="${v.id}">
+      <div class="num">${v.completed ? '✓' : v.unlocked ? v.sort : '🔒'}</div>
+      <div><h3 style="margin:0;font-family:var(--font-body);font-size:.95rem">${v[`title_${L}`]}</h3>
+        <div class="bar sm core" style="margin-top:.35rem;max-width:220px"><i data-video-bar="${v.id}" style="width:${pct}%"></i></div></div>
+      <div class="row">${v.completed ? html`<span class="chip ok">✓ ${t('unicef.watched')}</span>`
+        : v.unlocked ? html`<span class="chip info">${t('unicef.now_watching')}</span>`
+        : html`<span class="chip neutral">${t('unicef.locked_short')}</span>`}</div>
+    </div>`;
+  }
+
+  function quizHtml(m, qs) {
+    if (m.quiz.passed) {
+      return html`<div class="banner ok"><span>✅</span><div>${t('unicef.quiz_passed_note', { score: m.quiz.score, total: m.quiz.total })}</div></div>`;
+    }
+    return html`<div class="card">
+      <h3>${t('unicef.quiz_title')}</h3>
+      ${m.quiz.attempted ? html`<div class="banner bad"><span>✕</span><div>${t('unicef.quiz_failed_note', { score: m.quiz.score, total: m.quiz.total })}</div></div>` : html`<p class="muted small">${t('unicef.quiz_intro')}</p>`}
+      <form data-form="uni-quiz">
+        ${qs.map((q, i) => html`<fieldset class="field" style="border:0;padding:0;margin-bottom:1.1rem">
+          <legend style="font-weight:600;margin-bottom:.5rem">${i + 1}. ${L === 'hy' ? q.question_hy : q.question_en}</legend>
+          ${q.options.map((o) => html`<label class="check" style="font-weight:400;margin-bottom:.3rem">
+            <input type="radio" name="${q.id}" value="${o.key}" required> <span>${L === 'hy' ? o.hy : o.en}</span></label>`)}
+        </fieldset>`)}
+        <button class="btn" type="submit" ${locked ? raw('disabled') : ''}>${t('unicef.quiz_submit')}</button>
+      </form></div>`;
+  }
+
+  async function moduleDetailHtml(m) {
+    const current = m.videos.find((v) => v.unlocked && !v.completed);
+    const qs = m.all_videos_done ? await api.unicefQuizQuestions(m.id) : [];
+    return html`<div class="main-head"><div><button class="link-btn" type="button" data-act="uni-back">← ${t('unicef.back_to_modules')}</button><h1>${modTitle(m)}</h1></div></div>
+      ${current ? html`<div class="card" style="margin-bottom:1rem">
+        <video id="uni-player" data-video-id="${current.id}" data-max-time="${current.max_time}" controls preload="metadata"
+          controlsList="nodownload noremoteplayback" disablepictureinpicture playsinline
+          style="width:100%;max-height:70vh;border-radius:10px;background:#000" src="${videoUrl(current)}"></video>
+        <p class="muted small" style="margin-top:.6rem">${t('unicef.no_skip_note')}</p></div>` : ''}
+      <h3>${t('unicef.videos_label')}</h3>
+      ${m.videos.map((v) => videoRowHtml(m, v, current?.id === v.id))}
+      ${m.all_videos_done ? quizHtml(m, qs) : html`<p class="muted small">${t('unicef.finish_videos_note')}</p>`}`;
+  }
+
+  async function render(root) {
+    const m = openModuleId ? status.find((x) => x.id === openModuleId) : null;
+    root.innerHTML = (m ? await moduleDetailHtml(m) : listHtml()).s;
+    if (m) wireVideo(root, m);
+  }
+
+  function wireVideo(root, m) {
+    const video = root.querySelector('#uni-player');
+    if (!video) return;
+    let maxTime = Number(video.dataset.maxTime) || 0;
+    let lastPing = 0;
+    let settled = false;
+
+    // Resume where the ambassador left off. readyState may already be >= HAVE_METADATA by the time this
+    // runs (a cached video can reach that state before the loadedmetadata listener below gets attached),
+    // so check both: once now, and again if the event still fires later.
+    const resumeSeek = () => { if (maxTime > 0 && video.duration) video.currentTime = Math.min(maxTime, video.duration - 0.25); };
+    if (video.readyState >= 1) resumeSeek();
+    video.addEventListener('loadedmetadata', resumeSeek);
+    video.addEventListener('seeking', () => { if (video.currentTime > maxTime + 1.5) video.currentTime = maxTime; });
+    video.addEventListener('ratechange', () => { if (video.playbackRate > 1.01) video.playbackRate = 1; });
+
+    const bar = () => root.querySelector(`[data-video-bar="${video.dataset.videoId}"]`);
+    const ping = async (force) => {
+      if (settled) return;
+      const now = Date.now();
+      if (!force && now - lastPing < PING_MS) return;
+      lastPing = now;
+      maxTime = Math.max(maxTime, video.currentTime);
+      let r;
+      try { r = await api.reportVideoProgress(video.dataset.videoId, video.currentTime, video.duration || null); }
+      catch { return; }
+      maxTime = Math.max(maxTime, r.max_time);
+      if (video.duration && bar()) bar().style.width = `${Math.min(100, Math.round((maxTime / video.duration) * 100))}%`;
+      if (r.completed) {
+        settled = true;
+        video.pause();
+        toast(t('unicef.video_done'));
+        status = await api.myUnicefStatus();
+        render(root);
+      }
+    };
+    video.addEventListener('timeupdate', () => ping(false));
+    video.addEventListener('pause', () => ping(true));
+    video.addEventListener('ended', () => ping(true));
+  }
+
   return {
-    html: html`<div class="main-head"><div><a class="small" href="/app/learning" data-link>← ${t('nav.learning')}</a><h1>${t('unicef.title')}</h1></div></div>
-    <p class="muted" style="max-width:720px">${t('unicef.intro')}</p>
-    ${claim ? html`<div class="banner ok"><span>🎉</span><div>${t('unicef.completed', { credits: claim.credits })}</div></div>`
-      : locked ? html`<div class="banner bad"><span>🔒</span><div>${t('learn.closed_banner')}</div></div>`
-      : cat.full ? html`<div class="banner"><span>ℹ️</span><div>${cat.complete ? t('learn.cat_closed') : t('learn.cat_full')}</div></div>` : ''}
-    <div class="card" style="margin-bottom:1.2rem"><div class="row"><b>${t('unicef.progress')}</b><span class="muted">${done.size} / ${modules.length}</span><div class="grow"></div><span class="chip credits">20 ${t('learn.credits')}</span></div>
-      <div class="bar core" style="margin-top:.6rem"><i style="width:${pct}%"></i></div></div>
-    ${modules.map((m, i) => html`<div class="module ${done.has(m.id) ? 'done' : ''}">
-      <div class="num">${done.has(m.id) ? '✓' : i + 1}</div>
-      <div><h3 style="margin:0;font-family:var(--font-body);font-size:1.02rem">${m[`title_${L}`]}</h3><div class="muted small">${m[`desc_${L}`] || ''}</div></div>
-      <div class="row">${m.url ? html`<a class="btn secondary sm" href="${safeUrl(m.url)}" target="_blank" rel="noopener noreferrer">${t('unicef.open')} ↗</a>` : ''}
-        ${claim ? '' : done.has(m.id)
-          ? html`<button class="btn ghost sm" type="button" data-act="unicef-toggle" data-id="${m.id}" data-done="0" ${locked ? raw('disabled') : ''}>${t('unicef.undo')}</button>`
-          : html`<button class="btn sm" type="button" data-act="unicef-toggle" data-id="${m.id}" data-done="1" ${blockedNew ? raw('disabled') : ''}>${t('unicef.mark')}</button>`}</div></div>`)}
-    <p class="muted small">${t('unicef.note')}</p>`,
-    mount() {
-      actions['unicef-toggle'] = async (el) => {
-        el.disabled = true;
+    html: html`<div id="uni-root"></div>`,
+    async mount(root) {
+      const box = root.querySelector('#uni-root');
+      actions['uni-open'] = (el) => { openModuleId = el.dataset.id; render(box); };
+      actions['uni-back'] = () => { openModuleId = null; render(box); };
+      forms['uni-quiz'] = async (form) => {
+        const btn = form.querySelector('[type=submit]'); setBusy(btn, true, t('common.wait'));
+        const answers = {};
+        for (const el of form.querySelectorAll('input[type=radio]:checked')) answers[el.name] = [el.value];
         try {
-          const r = await api.setUnicef(el.dataset.id, el.dataset.done === '1');
-          if (r.done >= r.total && el.dataset.done === '1') toast(t('unicef.awarded'));
-          await api.refreshMe(); navigate(location.pathname);
-        } catch (e) { toast(errText(e), 'bad'); el.disabled = false; }
+          const r = await api.submitQuiz(openModuleId, answers);
+          toast(r.passed ? t('unicef.quiz_passed_toast') : t('unicef.quiz_failed_toast', { score: r.score, total: r.total }), r.passed ? 'ok' : 'bad');
+          await api.refreshMe();
+          status = await api.myUnicefStatus();
+          render(box);
+        } catch (e) { toast(errText(e), 'bad'); setBusy(btn, false); }
       };
+      await render(box);
     },
   };
 }

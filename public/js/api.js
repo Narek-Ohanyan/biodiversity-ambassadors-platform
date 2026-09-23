@@ -59,11 +59,6 @@ export async function refreshMe() {
   state.progress = unwrap(prog);
 }
 
-export async function loadModules() {
-  if (state.config.modules.length) return state.config.modules;
-  state.config.modules = unwrap(await sb.from('unicef_modules').select('*').order('sort'));
-  return state.config.modules;
-}
 
 // ── auth ────────────────────────────────────────────────────────────────────
 export const signIn = (email, password) => sb.auth.signInWithPassword({ email, password }).then(unwrap);
@@ -97,8 +92,14 @@ export async function saveProfile(values, photoBlob) {
 }
 
 export const myClaims = () => sb.from('claims').select('*, claim_files(id)').eq('user_id', state.user.id).order('created_at', { ascending: false }).then(unwrap);
-export const myUnicef = () => sb.from('unicef_progress').select('module_id').eq('user_id', state.user.id).then(unwrap);
-export const setUnicef = (module, done) => sb.rpc('set_unicef_module', { p_module: module, p_done: done }).then(unwrap);
+// UNICEF course: sequential modules, each with a locked video series and a quiz. All enforcement
+// (no skipping ahead, no jumping modules, quiz answer key) lives server-side — see the migration.
+export const myUnicefStatus = () => sb.rpc('my_unicef_status').then(unwrap);
+export const reportVideoProgress = (video, time, duration) =>
+  sb.rpc('report_video_progress', { p_video: video, p_time: time, p_duration: duration ?? null }).then(unwrap);
+export const submitQuiz = (module, answers) => sb.rpc('submit_quiz', { p_module: module, p_answers: answers }).then(unwrap);
+export const unicefQuizQuestions = (module) =>
+  sb.from('unicef_quiz_questions').select('id,module_id,sort,question_en,question_hy,options').eq('module_id', module).order('sort').then(unwrap);
 
 export async function uploadCertificates(files) {
   const uid = state.user.id;

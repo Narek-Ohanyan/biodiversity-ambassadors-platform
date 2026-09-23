@@ -34,12 +34,25 @@ http.createServer((req, res) => {
 
   const isMedia = pathname.startsWith('/media/');
   const file = isMedia ? safeJoin(MEDIA, pathname.slice('/media/'.length)) : safeJoin(PUBLIC, pathname);
+  // Video (and any other large file) needs Range support, or the browser can't seek at all —
+  // without a 206 response it reports an empty seekable range and every currentTime write is dropped.
   const serve = (f) => {
-    res.writeHead(200, {
-      'Content-Type': TYPES[path.extname(f).toLowerCase()] || 'application/octet-stream',
-      'Cache-Control': 'no-cache',
-      'X-Content-Type-Options': 'nosniff',
-    });
+    const type = TYPES[path.extname(f).toLowerCase()] || 'application/octet-stream';
+    const size = fs.statSync(f).size;
+    const headers = { 'Content-Type': type, 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff', 'Accept-Ranges': 'bytes' };
+    const range = req.headers.range;
+    const m = range && /^bytes=(\d*)-(\d*)$/.exec(range);
+    if (m) {
+      let start = m[1] === '' ? size - Number(m[2]) : Number(m[1]);
+      let end = m[2] === '' || m[1] === '' ? size - 1 : Math.min(Number(m[2]), size - 1);
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start < 0 || start >= size) {
+        res.writeHead(416, { ...headers, 'Content-Range': `bytes */${size}` });
+        return res.end();
+      }
+      res.writeHead(206, { ...headers, 'Content-Range': `bytes ${start}-${end}/${size}`, 'Content-Length': end - start + 1 });
+      return fs.createReadStream(f, { start, end }).pipe(res);
+    }
+    res.writeHead(200, { ...headers, 'Content-Length': size });
     fs.createReadStream(f).pipe(res);
   };
 
