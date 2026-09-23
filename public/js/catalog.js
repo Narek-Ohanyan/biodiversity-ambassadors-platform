@@ -27,6 +27,10 @@ export const ACTIVITY_TEXT = {
     en: 'Culture Partnership: Communication Course', hy: 'Culture Partnership․ հաղորդակցության դասընթաց',
     url: 'https://www.culturepartnership.eu/am/publishing/communication-course',
   },
+  culture_digital_comm: {
+    en: 'Culture Partnership: Digital Communication Course', hy: 'Culture Partnership․ թվային հաղորդակցության դասընթաց',
+    url: 'https://www.culturepartnership.eu/am/publishing/digital-communication',
+  },
   soft_other: { en: 'Other (equivalent soft skills course)', hy: 'Այլ (համարժեք փափուկ հմտությունների դասընթաց)' },
 };
 
