@@ -44,7 +44,7 @@ export async function overviewView() {
 const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
 export async function mgrAmbassadorsView() {
-  const list = await api.mgr.ambassadors();
+  let list = await api.mgr.ambassadors();
   const unis = [...new Set(list.map((a) => a.university).filter(Boolean))].sort();
   const rows = (items) => (items.length ? html`${items.map((a) => html`<tr>
       <td><b>${fullName(a) || '—'}</b><div class="small muted">${a.email}</div></td>
@@ -55,7 +55,8 @@ export async function mgrAmbassadorsView() {
       <td class="small muted">${a.last_seen_at ? fmtDate(a.last_seen_at) : t('mgr.never')}</td>
       <td><div class="row" style="flex-wrap:nowrap;gap:.3rem"><button class="btn secondary sm" type="button" data-act="amb-view" data-id="${a.id}">${t('mgr.view')}</button>
         <button class="btn ghost sm" type="button" data-act="amb-reset" data-id="${a.id}">${t('mgr.reset_pw')}</button>
-        <button class="btn ghost sm" type="button" data-act="amb-msg" data-id="${a.id}">${t('mgr.message')}</button></div></td></tr>`)}`
+        <button class="btn ghost sm" type="button" data-act="amb-msg" data-id="${a.id}">${t('mgr.message')}</button>
+        <button class="btn sm danger" type="button" data-act="amb-delete" data-id="${a.id}">${t('mgr.delete_account')}</button></div></td></tr>`)}`
     : html`<tr><td colspan="7" class="center muted" style="padding:2rem">${t('mgr.none')}</td></tr>`);
   return {
     html: html`<div class="main-head"><h1>${t('mgr.ambassadors')}</h1><div class="grow"></div><button class="btn secondary" type="button" data-act="amb-csv">⬇ ${t('mgr.export')}</button></div>
@@ -87,6 +88,18 @@ export async function mgrAmbassadorsView() {
       };
       actions['amb-msg'] = (el) => { const a = byId(el.dataset.id); sessionStorage.setItem('msgTo', JSON.stringify([{ id: a.id, name: fullName(a) || a.email }])); navigate('/manager/messages'); };
       actions['amb-reset'] = (el) => resetDialog(byId(el.dataset.id));
+      actions['amb-delete'] = async (el) => {
+        const a = byId(el.dataset.id);
+        if (!(await confirmDialog({ title: t('mgr.delete_account'), message: `${fullName(a) || a.email} — ${t('mgr.delete_account_confirm')}`, danger: true, confirmText: t('mgr.delete_account') }))) return;
+        setBusy(el, true, t('common.wait'));
+        try {
+          await api.mgr.deleteAccount(a.id);
+          list = list.filter((x) => x.id !== a.id);
+          apply();
+          toast(t('mgr.delete_account_done'));
+          await refreshBadges();
+        } catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
+      };
       actions['amb-view'] = async (el) => {
         const a = byId(el.dataset.id);
         const m = openModal({ title: fullName(a) || a.email, wide: true, body: html`<div class="loading"><span class="spinner"></span></div>` });

@@ -168,6 +168,15 @@ export const mgr = {
     }
     return data;
   },
+  deleteAccount: async (userId) => {
+    const { data, error } = await sb.functions.invoke('manager-delete-account', { body: { user_id: userId } });
+    if (error) {
+      let detail = error.message;
+      try { detail = (await error.context.json()).error || detail; } catch { /* keep message */ }
+      throw new Error(detail);
+    }
+    return data;
+  },
   audienceCount: (aud) => sb.rpc('audience_count', { p_audience: aud }).then(unwrap),
   announce: (m) => sb.rpc('send_announcement', {
     p_title_en: m.title_en, p_title_hy: m.title_hy, p_body_en: m.body_en, p_body_hy: m.body_hy, p_audience: m.audience,
