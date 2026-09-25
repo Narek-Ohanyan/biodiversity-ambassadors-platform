@@ -5,6 +5,7 @@ import * as api from './api.js';
 import { state, isLocked } from './api.js';
 import { SKILLS, LANGUAGES, PROFICIENCY, UNIVERSITIES } from './catalog.js';
 import { navigate } from './router.js';
+import { MEDIA_BASE } from './config.js';
 import { formMsg, localUniversity } from './pages-public.js';
 
 const opt = (list, sel) => list.map((o) => html`<option value="${o.key}" ${o.key === sel ? raw('selected') : ''}>${o[getLang()]}</option>`);
@@ -349,7 +350,7 @@ actions['claim-form'] = (el) => {
 // ── UNICEF course: sequential modules, locked videos (no skipping ahead), quiz per module ──
 // All of the actual enforcement (module order, video order, no-skip rate limiting, the quiz answer
 // key) lives server-side in report_video_progress()/submit_quiz() — this view is just the player.
-const videoUrl = (v) => `/media/unicef_modules/${v.dir}/${encodeURIComponent(v.filename)}`;
+const videoUrl = (v) => `${MEDIA_BASE}/unicef_modules/${v.dir}/${encodeURIComponent(v.filename)}`;
 const PING_MS = 4000;
 
 export async function unicefView() {

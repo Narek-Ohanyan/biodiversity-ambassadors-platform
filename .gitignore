@@ -7,3 +7,8 @@ supabase/.temp
 # Real attendee data (names, university, check-in times) — already imported into Supabase.
 # Never publish this to a git history; re-run scripts/../import if it needs to be re-loaded.
 /Event-CheckIn-*.xlsx
+
+# UNICEF module videos now live in Cloudflare R2 (see public/js/config.js MEDIA_BASE) — serving
+# ~900MB of video from the app itself blew through Render's free bandwidth quota. Keep the local
+# files for reference/re-upload, but don't commit them again.
+/media/unicef_modules/
