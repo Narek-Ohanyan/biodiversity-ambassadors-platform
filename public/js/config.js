@@ -9,3 +9,5 @@ export const ACE_URL = 'https://ace.aua.am/';
 // The program name is a proper noun and stays the same in every interface language.
 export const BRAND_NAME = 'Biodiversity Ambassadors';
 export const BRAND_SUB = 'AUCB × GYBN Armenia';
+// Canonical production origin, used to build absolute canonical/Open Graph URLs (see main.js's SEO handling).
+export const SITE_URL = 'https://biodiversityambassadors.com';

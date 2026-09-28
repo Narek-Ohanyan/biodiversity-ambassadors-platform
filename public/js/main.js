@@ -2,7 +2,7 @@ import { t, getLang, setLang } from './i18n.js';
 import { actions, html, toast } from './lib.js';
 import * as api from './api.js';
 import { state, sb } from './api.js';
-import { BRAND_NAME } from './config.js';
+import { BRAND_NAME, SITE_URL } from './config.js';
 import { setRouter, navigate } from './router.js';
 import { publicShell, ambassadorShell, managerShell } from './layouts.js';
 import * as pub from './pages-public.js';
@@ -15,25 +15,45 @@ let renderToken = 0;
 
 // path -> { view, title key, shell }
 const ROUTES = {
-  '/': { view: pub.homeView, title: 'nav.home', shell: 'public' },
-  '/about': { view: pub.aboutView, title: 'nav.about', shell: 'public' },
-  '/platform': { view: pub.platformView, title: 'nav.platform', shell: 'public' },
-  '/platform/reset': { view: pub.resetView, title: 'auth.reset_title', shell: 'public' },
-  '/ambassadors': { view: pub.ambassadorsView, title: 'nav.ambassadors', shell: 'public' },
-  '/contact': { view: pub.contactView, title: 'nav.contact', shell: 'public' },
-  '/app/profile': { view: amb.profileView, title: 'nav.profile', shell: 'ambassador', role: 'ambassador' },
-  '/app/notifications': { view: notificationsView, title: 'nav.notifications', shell: 'ambassador', role: 'ambassador' },
-  '/app/learning': { view: amb.learningView, title: 'nav.learning', shell: 'ambassador', role: 'ambassador', needsProfile: true },
-  '/app/unicef': { view: amb.unicefView, title: 'unicef.title', shell: 'ambassador', role: 'ambassador', needsProfile: true },
-  '/manager': { view: mgr.overviewView, title: 'mgr.overview', shell: 'manager', role: 'manager' },
-  '/manager/ambassadors': { view: mgr.mgrAmbassadorsView, title: 'mgr.ambassadors', shell: 'manager', role: 'manager' },
-  '/manager/claims': { view: mgr.claimsView, title: 'mgr.claims', shell: 'manager', role: 'manager' },
-  '/manager/checkins': { view: mgr.checkinsView, title: 'mgr.checkins', shell: 'manager', role: 'manager' },
-  '/manager/messages': { view: mgr.messagesView, title: 'mgr.messages', shell: 'manager', role: 'manager' },
-  '/manager/inbox': { view: mgr.inboxView, title: 'mgr.inbox', shell: 'manager', role: 'manager' },
-  '/manager/notifications': { view: notificationsView, title: 'nav.notifications', shell: 'manager', role: 'manager' },
-  '/manager/account': { view: mgr.mgrAccountView, title: 'mgr.account', shell: 'manager', role: 'manager' },
+  '/': { view: pub.homeView, title: 'nav.home', shell: 'public', desc: 'seo.home_desc' },
+  '/about': { view: pub.aboutView, title: 'nav.about', shell: 'public', desc: 'seo.about_desc' },
+  '/platform': { view: pub.platformView, title: 'nav.platform', shell: 'public', desc: 'seo.platform_desc' },
+  '/platform/reset': { view: pub.resetView, title: 'auth.reset_title', shell: 'public', noindex: true },
+  '/ambassadors': { view: pub.ambassadorsView, title: 'nav.ambassadors', shell: 'public', desc: 'seo.ambassadors_desc' },
+  '/contact': { view: pub.contactView, title: 'nav.contact', shell: 'public', desc: 'seo.contact_desc' },
+  '/app/profile': { view: amb.profileView, title: 'nav.profile', shell: 'ambassador', role: 'ambassador', noindex: true },
+  '/app/notifications': { view: notificationsView, title: 'nav.notifications', shell: 'ambassador', role: 'ambassador', noindex: true },
+  '/app/learning': { view: amb.learningView, title: 'nav.learning', shell: 'ambassador', role: 'ambassador', needsProfile: true, noindex: true },
+  '/app/unicef': { view: amb.unicefView, title: 'unicef.title', shell: 'ambassador', role: 'ambassador', needsProfile: true, noindex: true },
+  '/manager': { view: mgr.overviewView, title: 'mgr.overview', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/ambassadors': { view: mgr.mgrAmbassadorsView, title: 'mgr.ambassadors', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/claims': { view: mgr.claimsView, title: 'mgr.claims', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/checkins': { view: mgr.checkinsView, title: 'mgr.checkins', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/messages': { view: mgr.messagesView, title: 'mgr.messages', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/inbox': { view: mgr.inboxView, title: 'mgr.inbox', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/notifications': { view: notificationsView, title: 'nav.notifications', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/account': { view: mgr.mgrAccountView, title: 'mgr.account', shell: 'manager', role: 'manager', noindex: true },
 };
+
+// Upserts a <meta>/<link> tag by attribute so repeated navigations update in place instead of piling up.
+function upsertTag(tag, attr, value, content, contentAttr = 'content') {
+  let el = document.head.querySelector(`${tag}[${attr}="${value}"]`);
+  if (!el) { el = document.createElement(tag); el.setAttribute(attr, value); document.head.appendChild(el); }
+  el.setAttribute(contentAttr, content);
+}
+
+function setSEO(def, path) {
+  const url = `${SITE_URL}${path === '/' ? '' : path}`;
+  upsertTag('link', 'rel', 'canonical', url, 'href');
+  upsertTag('meta', 'name', 'robots', def.noindex ? 'noindex, nofollow' : 'index, follow');
+  if (def.desc) {
+    const desc = t(def.desc);
+    upsertTag('meta', 'name', 'description', desc);
+    upsertTag('meta', 'property', 'og:description', desc);
+  }
+  upsertTag('meta', 'property', 'og:title', document.title);
+  upsertTag('meta', 'property', 'og:url', url);
+}
 
 async function route() {
   const token = ++renderToken;
@@ -51,6 +71,7 @@ async function route() {
 
   document.title = `${t(def.title)} · ${BRAND_NAME}`;
   document.documentElement.lang = getLang();
+  setSEO(def, path);
   document.body.classList.toggle('is-platform-page', path === '/platform');
   if (!app.innerHTML.trim()) app.innerHTML = html`<div class="loading"><span class="spinner"></span></div>`.s;
   let view;

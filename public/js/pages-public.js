@@ -32,7 +32,7 @@ export async function homeView() {
     html: html`
     <section class="hero" aria-roledescription="carousel" aria-label="${t('home.carousel')}">
       ${slides.length
-        ? html`<div class="hero-slides">${slides.map((s, i) => html`<img src="${s}" alt="" class="${i === 0 ? 'on' : ''}" ${i === 0 ? '' : raw('loading="lazy"')}>`)}</div>`
+        ? html`<div class="hero-slides">${slides.map((s, i) => html`<img src="${s}" alt="${t('home.carousel')}" class="${i === 0 ? 'on' : ''}" ${i === 0 ? '' : raw('loading="lazy"')}>`)}</div>`
         : html`<div class="hero-fallback">${contourSvg}</div>`}
       <div class="container"><div class="hero-content">
         <p class="eyebrow">${t('home.eyebrow')}</p>
@@ -113,7 +113,7 @@ export async function aboutView() {
       <div><h2>${t('about.aucb')}</h2>${CONTENT.aucb[L].map((p) => html`<p>${p}</p>`)}</div>
       <div><h3>${t('about.members')}</h3><div class="pills">${UNIVERSITIES.map((u) => html`<span class="pill">${u[L]}</span>`)}</div></div>
     </div></section>
-    ${m.about?.length ? html`<section class="section tint"><div class="container"><div class="gallery">${m.about.map((s) => html`<img src="${s}" alt="" loading="lazy">`)}</div></div></section>` : ''}
+    ${m.about?.length ? html`<section class="section tint"><div class="container"><div class="gallery">${m.about.map((s) => html`<img src="${s}" alt="${t('about.gallery_alt')}" loading="lazy">`)}</div></div></section>` : ''}
     <section class="section"><div class="container"><div class="section-head"><p class="eyebrow">${t('about.team_eyebrow')}</p><h2>${t('about.team')}</h2></div>
       <div class="team" style="grid-template-columns:1fr">${CONTENT.team.map(person)}</div></div></section>`,
     mount(root) {
@@ -251,7 +251,7 @@ export function ambassadorBody(a, { showEmail = true } = {}) {
   const L = lang();
   const social = Object.entries(a.social || {}).filter(([, v]) => v);
   return html`<div class="row" style="align-items:flex-start;gap:1.2rem;flex-wrap:nowrap">
-      ${a.photo_path ? html`<img class="avatar" style="width:120px;flex:none" src="${api.photoUrl(a.photo_path)}" alt="">` : html`<div class="avatar" style="width:120px;flex:none">${initials(a.first_name, a.last_name)}</div>`}
+      ${a.photo_path ? html`<img class="avatar" style="width:120px;flex:none" src="${api.photoUrl(a.photo_path)}" alt="${a.first_name} ${a.last_name}">` : html`<div class="avatar" style="width:120px;flex:none">${initials(a.first_name, a.last_name)}</div>`}
       <div><h3 style="margin-bottom:.1rem">${a.first_name} ${a.last_name}</h3><div>${localUniversity(a.university)}</div><div class="muted">${a.faculty}</div></div></div>
     <p style="margin-top:1rem;white-space:pre-line">${a.bio}</p>
     ${a.skills?.length ? html`<h4>${t('profile.skills')}</h4><div class="chips" style="margin-bottom:1rem">${a.skills.map((s) => html`<span class="chip">${skillLabel(s)}</span>`)}</div>` : ''}
@@ -268,7 +268,7 @@ export async function ambassadorsView() {
   const unis = [...new Set(list.map((a) => a.university))].sort();
   const grid = (items) => (items.length
     ? html`<div class="amb-grid">${items.map((a) => html`<button type="button" class="amb-card" data-act="amb-open" data-id="${a.id}">
-        ${a.photo_path ? html`<img class="photo" src="${api.photoUrl(a.photo_path)}" alt="" loading="lazy">` : html`<div class="photo avatar" style="border-radius:0">${initials(a.first_name, a.last_name)}</div>`}
+        ${a.photo_path ? html`<img class="photo" src="${api.photoUrl(a.photo_path)}" alt="${a.first_name} ${a.last_name}" loading="lazy">` : html`<div class="photo avatar" style="border-radius:0">${initials(a.first_name, a.last_name)}</div>`}
         <div class="body"><h3>${a.first_name} ${a.last_name}</h3><div class="small">${localUniversity(a.university)}</div><div class="small muted">${a.faculty}</div></div></button>`)}</div>`
     : html`<div class="empty"><p style="font:700 1.3rem var(--font-head);color:var(--forest-900)">${failed ? t('err.generic') : t('amb.empty_title')}</p><p>${t('amb.empty_text')}</p><a class="btn" href="/platform" data-link>${t('home.cta_join')}</a></div>`);
   return {

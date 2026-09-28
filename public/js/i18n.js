@@ -3,6 +3,11 @@ const DICT = {
   en: {
     'brand.name': 'Biodiversity Ambassadors', 'brand.sub': 'AUCB × GYBN Armenia',
     'nav.home': 'Home', 'nav.about': 'About', 'nav.platform': 'Platform', 'nav.ambassadors': 'Ambassadors', 'nav.ace': 'AUA ACE', 'nav.contact': 'Contact',
+    'seo.home_desc': 'Biodiversity Ambassadors: AUCB × GYBN Armenia are training ~300 university students ahead of COP17 in Yerevan (Oct 19–30, 2026) to become certified advocates for nature and biodiversity.',
+    'seo.about_desc': 'Learn about the Armenian Universities Coalition for Biodiversity (AUCB), the Biodiversity Ambassadors program’s goals, and the team behind it ahead of COP17 in Yerevan.',
+    'seo.platform_desc': 'Sign in or register for the Biodiversity Ambassadors platform to track your 60 credits, complete trainings, submit certificates, and become a certified Biodiversity Ambassador.',
+    'seo.ambassadors_desc': 'Meet Armenia’s certified Biodiversity Ambassadors — university students recognized for completing the AUCB × GYBN Armenia program ahead of COP17 in Yerevan.',
+    'seo.contact_desc': 'Get in touch with the Biodiversity Ambassadors program team (AUCB × GYBN Armenia) — questions, partnerships, and media inquiries ahead of COP17 in Yerevan.',
     'nav.dashboard': 'My platform', 'nav.logout': 'Sign out', 'nav.website': 'Website', 'nav.profile': 'My Profile', 'nav.notifications': 'Notifications', 'nav.learning': 'My Learning',
     'common.close': 'Close', 'common.cancel': 'Cancel', 'common.confirm': 'Confirm', 'common.save': 'Save changes', 'common.select': 'Select…', 'common.add': 'Add', 'common.remove': 'Remove',
     'common.delete': 'Delete', 'common.copy': 'Copy', 'common.copied': 'Copied', 'common.wait': 'Please wait…', 'common.uploading': 'Uploading…', 'common.got_it': 'Got it', 'common.not_found': 'This page does not exist.',
@@ -24,7 +29,7 @@ const DICT = {
     'home.total_note': '40 core + 10 elective + 10 soft skills = 60 credits',
 
     'about.eyebrow': 'AUCB × GYBN Armenia', 'about.program': 'The Biodiversity Ambassadors program', 'about.objectives': 'Program objectives', 'about.aucb': 'About AUCB',
-    'about.members': 'Member universities', 'about.team_eyebrow': 'The people behind it', 'about.team': 'Program team',
+    'about.members': 'Member universities', 'about.team_eyebrow': 'The people behind it', 'about.team': 'Program team', 'about.gallery_alt': 'Biodiversity Ambassadors program photo',
 
     'platform.eyebrow': 'For ambassador candidates', 'platform.title': 'Your ambassador platform',
     'platform.text': 'Sign in to track your progress towards the 60 credits, take the trainings, submit certificates and receive announcements from the program team.',
@@ -147,6 +152,11 @@ const DICT = {
   hy: {
     'brand.name': 'Կենսաբազմազանության դեսպաններ', 'brand.sub': 'ԿՀԲԿ × GYBN Հայաստան',
     'nav.home': 'Գլխավոր', 'nav.about': 'Մեր մասին', 'nav.platform': 'Հարթակ', 'nav.ambassadors': 'Դեսպաններ', 'nav.ace': 'ՀԱՀ Յակոբեան կենտրոն', 'nav.contact': 'Կապ',
+    'seo.home_desc': 'Կենսաբազմազանության դեսպաններ. ԿՀԲԿ և GYBN Armenia-ն COP17-ին (Երևան, 19-30 հոկտեմբերի, 2026) ընդառաջ պատրաստում են ավելի քան 300 համալսարանական ուսանողի՝ որպես կենսաբազմազանության պաշտոնական դեսպաններ։',
+    'seo.about_desc': 'Իմացեք Կենսաբազմազանության հարցերով հայկական բուհերի կոալիցիայի (ԿՀԲԿ), «Կենսաբազմազանության դեսպաններ» ծրագրի նպատակների և թիմի մասին՝ COP17-ին ընդառաջ։',
+    'seo.platform_desc': 'Մուտք գործեք կամ գրանցվեք Կենսաբազմազանության դեսպանների հարթակում՝ հետևելու ձեր 60 կրեդիտի առաջընթացին, անցնելու ուսուցումներ և ստանալու «Դեսպան» պաշտոնական կոչումը։',
+    'seo.ambassadors_desc': 'Ծանոթացեք Հայաստանի հավաստագրված Կենսաբազմազանության դեսպաններին՝ ԿՀԲԿ և GYBN Armenia ծրագիրը հաջողությամբ ավարտած համալսարանական ուսանողներին։',
+    'seo.contact_desc': 'Կապվեք Կենսաբազմազանության դեսպաններ ծրագրի թիմի հետ (ԿՀԲԿ × GYBN Armenia)՝ հարցերի, համագործակցության և մամուլի հարցումների համար։',
     'nav.dashboard': 'Իմ հարթակը', 'nav.logout': 'Դուրս գալ', 'nav.website': 'Կայք', 'nav.profile': 'Իմ պրոֆիլը', 'nav.notifications': 'Ծանուցումներ', 'nav.learning': 'Իմ դասասենյակը',
     'common.close': 'Փակել', 'common.cancel': 'Չեղարկել', 'common.confirm': 'Հաստատել', 'common.save': 'Պահպանել փոփոխությունները', 'common.select': 'Ընտրել…', 'common.add': 'Ավելացնել', 'common.remove': 'Հեռացնել',
     'common.delete': 'Ջնջել', 'common.copy': 'Պատճենել', 'common.copied': 'Պատճենվեց', 'common.wait': 'Սպասեք…', 'common.uploading': 'Վերբեռնվում է…', 'common.got_it': 'Պարզ է', 'common.not_found': 'Այս էջը գոյություն չունի։',
@@ -168,7 +178,7 @@ const DICT = {
     'home.total_note': '40 հիմնական + 10 ընտրովի + 10 փափուկ հմտություն = 60 կրեդիտ',
 
     'about.eyebrow': 'ԿՀԲԿ × GYBN Հայաստան', 'about.program': '«Կենսաբազմազանության դեսպաններ» ծրագիրը', 'about.objectives': 'Ծրագրի նպատակները', 'about.aucb': 'ԿՀԲԿ-ի մասին',
-    'about.members': 'Անդամ բուհեր', 'about.team_eyebrow': 'Ովքեր են կանգնած ծրագրի հետևում', 'about.team': 'Ծրագրի թիմ',
+    'about.members': 'Անդամ բուհեր', 'about.team_eyebrow': 'Ովքեր են կանգնած ծրագրի հետևում', 'about.team': 'Ծրագրի թիմ', 'about.gallery_alt': 'Կենսաբազմազանության դեսպաններ ծրագրի լուսանկար',
 
     'platform.eyebrow': 'Դեսպանի թեկնածուների համար', 'platform.title': 'Ձեր դեսպանի հարթակը',
     'platform.text': 'Մուտք գործեք՝ հետևելու 60 կրեդիտի ձեր առաջընթացին, անցնելու ուսուցումներ, ներկայացնելու վկայականներ և ստանալու ծրագրի թիմի ծանուցումները։',
