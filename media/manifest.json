@@ -1,0 +1,43 @@
+{
+  "carousel": [
+    "/media/home-carousel/Copy%20of%207M4A4464.jpg",
+    "/media/home-carousel/Copy%20of%207M4A4467.jpg",
+    "/media/home-carousel/Copy%20of%207M4A4478.jpg",
+    "/media/home-carousel/Copy%20of%207M4A4715.jpg",
+    "/media/home-carousel/Copy%20of%207M4A4857.jpg",
+    "/media/home-carousel/Copy%20of%207M4A5094.jpg",
+    "/media/home-carousel/Copy%20of%207M4A5096.jpg",
+    "/media/home-carousel/Copy%20of%207M4A5143.jpg",
+    "/media/home-carousel/Copy%20of%207M4A5150.jpg",
+    "/media/home-carousel/Copy%20of%207M4A5156.jpg",
+    "/media/home-carousel/Copy%20of%207M4A5189.jpg",
+    "/media/home-carousel/Copy%20of%207M4A5190.jpg",
+    "/media/home-carousel/Copy%20of%207M4A5197.jpg"
+  ],
+  "about": [
+    "/media/about/AUCB.jpg",
+    "/media/about/Copy%20of%207M4A4407.jpg",
+    "/media/about/Copy%20of%207M4A4427.jpg",
+    "/media/about/Copy%20of%207M4A4435.jpg",
+    "/media/about/Copy%20of%207M4A4655.jpg",
+    "/media/about/Copy%20of%207M4A4730.jpg",
+    "/media/about/Copy%20of%207M4A4790.jpg",
+    "/media/about/Copy%20of%207M4A4844.jpg",
+    "/media/about/Copy%20of%207M4A4860.jpg",
+    "/media/about/Copy%20of%207M4A4877.jpg",
+    "/media/about/Copy%20of%207M4A5083.jpg",
+    "/media/about/Copy%20of%207M4A5085.jpg",
+    "/media/about/Copy%20of%207M4A5093.jpg",
+    "/media/about/Copy%20of%207M4A5182.jpg",
+    "/media/about/Copy%20of%207M4A5186.jpg",
+    "/media/about/Copy%20of%207M4A5202.jpg",
+    "/media/about/Copy%20of%207M4A5204.jpg",
+    "/media/about/Copy%20of%207M4A5211.jpg",
+    "/media/about/Copy%20of%207M4A5215.jpg",
+    "/media/about/Copy%20of%207M4A5218.jpg"
+  ],
+  "team": {
+    "alen": "/media/Alen%20pic.png",
+    "narek": "/media/narek.jpg"
+  }
+}

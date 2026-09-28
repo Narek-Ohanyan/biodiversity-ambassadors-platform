@@ -1,0 +1,21 @@
+# This repo is deployed as-is (git pull) to Hostinger, so the site's real files sit one level
+# down in public/ and media/ instead of at the web root. These rules make the web root behave as
+# if public/'s contents were there directly, with an SPA fallback to index.html for client-side
+# routes (e.g. /manager/claims) — mirroring what scripts/dev-server.js does for local dev and what
+# the Render static-site build step does by physically copying files instead.
+RewriteEngine On
+
+# Requests already under /public/ or /media/ map directly to those real files — pass through.
+RewriteRule ^(public|media)/ - [L]
+
+# Don't serve repo/source files that end up sitting in the web root from a plain git deploy.
+RewriteRule ^(package(-lock)?\.json|README\.md|\.mcp\.json|\.gitignore)$ - [F]
+RewriteRule ^(scripts|supabase|node_modules|\.git)(/|$) - [F]
+
+# If a real file exists inside public/ for this path, serve it from there.
+RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+RewriteRule ^ public%{REQUEST_URI} [L]
+
+# Everything else (the site root, and every client-side route the SPA router handles) falls back
+# to the app shell, which then renders the right view based on the URL.
+RewriteRule ^ public/index.html [L]
