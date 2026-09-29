@@ -20,12 +20,7 @@ RewriteRule ^ public%{REQUEST_URI} [L]
 # to the app shell, which then renders the right view based on the URL.
 RewriteRule ^ public/index.html [L]
 
-# Hostinger's CDN defaults to a 7-day cache for CSS/JS based on file extension, which means a code
-# fix could take up to a week to actually reach visitors after deploying — this app has no build
-# step to fingerprint filenames, so force short-lived, always-revalidated caching instead. The ETag
-# still lets an unchanged file be served from cache without a full re-download.
-<IfModule mod_headers.c>
-  <FilesMatch "\.(css|js)$">
-    Header set Cache-Control "no-cache, must-revalidate"
-  </FilesMatch>
-</IfModule>
+# Note: Hostinger's CDN caches .css/.js for 7 days at the edge regardless of origin Cache-Control
+# headers (confirmed: a `Header set Cache-Control` override here had no effect on the served
+# response) — cache-busting has to happen via the URL itself instead. See the ?v=N query params on
+# the stylesheet link and the import map in public/index.html.

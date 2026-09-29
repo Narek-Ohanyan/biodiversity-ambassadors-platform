@@ -13,7 +13,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=Noto+Sans+Armenian:wght@400;500;600;700&family=Noto+Serif+Armenian:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/styles.css">
+  <!-- Hostinger's CDN caches static assets for 7 days regardless of the origin file's freshness, and
+       there's no build step here to fingerprint filenames — so cache-busting is manual: bump every
+       ?v=N below (this stylesheet, the import map, and main.js's own tag) whenever CSS/JS changes,
+       or visitors on cached edge nodes won't see the fix for up to a week. -->
+  <link rel="stylesheet" href="/css/styles.css?v=1">
 
   <!-- Open Graph / social link previews. These stay static (not updated per-route by main.js's SEO
        handling) because link-preview bots and most crawlers don't execute JS, so whatever's here is
@@ -55,6 +59,27 @@
   <noscript><p style="padding:2rem">This site needs JavaScript. / Կայքը պահանջում է JavaScript։</p></noscript>
   <script src="/vendor/supabase.js"></script>
   <script src="/vendor/xlsx.full.min.js" defer></script>
-  <script type="module" src="/js/main.js"></script>
+  <!-- Remaps every same-origin JS import to a versioned URL, since main.js and every page module
+       import each other by plain relative path (e.g. `import ... from './i18n.js'`) and Hostinger's
+       CDN would otherwise keep serving a stale cached copy of any one of them for up to 7 days. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "/js/api.js": "/js/api.js?v=1",
+      "/js/catalog.js": "/js/catalog.js?v=1",
+      "/js/config.js": "/js/config.js?v=1",
+      "/js/content.js": "/js/content.js?v=1",
+      "/js/i18n.js": "/js/i18n.js?v=1",
+      "/js/layouts.js": "/js/layouts.js?v=1",
+      "/js/lib.js": "/js/lib.js?v=1",
+      "/js/pages-ambassador.js": "/js/pages-ambassador.js?v=1",
+      "/js/pages-common.js": "/js/pages-common.js?v=1",
+      "/js/pages-manager.js": "/js/pages-manager.js?v=1",
+      "/js/pages-public.js": "/js/pages-public.js?v=1",
+      "/js/router.js": "/js/router.js?v=1"
+    }
+  }
+  </script>
+  <script type="module" src="/js/main.js?v=1"></script>
 </body>
 </html>
