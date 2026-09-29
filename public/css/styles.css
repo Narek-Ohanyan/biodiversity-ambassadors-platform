@@ -204,7 +204,7 @@ th { background: var(--forest-50); font-size: .76rem; text-transform: uppercase;
 .toolbar { display: flex; gap: .7rem; flex-wrap: wrap; margin-bottom: 1rem; align-items: center; } .toolbar input, .toolbar select { width: auto; min-width: 180px; }
 .seg { display: inline-flex; background: #ece8da; border-radius: 999px; padding: .25rem; } .seg button { border: 0; background: transparent; padding: .4rem .9rem; border-radius: 999px; cursor: pointer; font-weight: 600; color: var(--muted); font-size: .88rem; } .seg button[aria-pressed=true] { background: var(--paper); color: var(--forest-900); box-shadow: var(--shadow); }
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; } .stat-grid .stat b { font-size: 2.2rem; }
-.mini-progress { display: grid; gap: 3px; min-width: 130px; } .mini-progress div { display: grid; grid-template-columns: 22px 1fr 44px; gap: 6px; align-items: center; font-size: .72rem; color: var(--muted); }
+.mini-progress { display: grid; gap: 3px; min-width: 130px; } .mini-progress > div { display: grid; grid-template-columns: 22px 1fr 44px; gap: 6px; align-items: center; font-size: .72rem; color: var(--muted); }
 .kv { display: grid; grid-template-columns: 150px 1fr; gap: .4rem 1rem; font-size: .92rem; } .kv dt { color: var(--muted); font-weight: 600; } .kv dd { margin: 0; word-break: break-word; }
 
 /* modal / toast */
