@@ -247,10 +247,18 @@ export async function rolesView() {
     <div class="row" style="margin:1rem 0 .8rem"><h2 style="margin:0;font-size:1.4rem">${t('roles.rapporteur')}</h2><span class="chip ok">${t('roles.mgr_count', { n: rows.length })}</span>
       <div class="grow"></div><button class="btn secondary sm" type="button" data-act="roles-copy" ${rows.length ? '' : raw('disabled')}>${t('roles.copy_emails')}</button>
       <button class="btn secondary sm" type="button" data-act="roles-csv" ${rows.length ? '' : raw('disabled')}>⬇ ${t('roles.export')}</button></div>
-    ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('auth.email')}</th><th>${t('profile.university')}</th><th>${t('roles.signed_at')}</th></tr></thead><tbody>
-      ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b></td><td class="small">${r.email}</td><td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td></tr>`)}</tbody></table></div>`
+    ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('auth.email')}</th><th>${t('profile.university')}</th><th>${t('roles.signed_at')}</th><th></th></tr></thead><tbody>
+      ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b></td><td class="small">${r.email}</td><td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td>
+        <td><button class="btn sm danger" type="button" data-act="roles-remove" data-id="${r.id}">${t('roles.remove')}</button></td></tr>`)}</tbody></table></div>`
       : html`<div class="empty">${t('roles.none')}</div>`}`,
     mount() {
+      actions['roles-remove'] = async (el) => {
+        const r = rows.find((x) => x.id === el.dataset.id);
+        if (!(await confirmDialog({ title: t('roles.remove'), message: `${fullName(r) || r.email} (${r.email}) — ${t('roles.remove_confirm')}`, danger: true, confirmText: t('roles.remove') }))) return;
+        setBusy(el, true, t('common.wait'));
+        try { await api.mgr.removeRoleSignup(r.id, 'rapporteur'); toast(t('roles.removed')); navigate(location.pathname); }
+        catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
+      };
       actions['roles-copy'] = async () => {
         try { await navigator.clipboard.writeText(emails()); toast(t('roles.copied')); } catch (e) { toast(errText(e), 'bad'); }
       };

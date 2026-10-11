@@ -21,6 +21,8 @@ export function notifText(n) {
         body: [t('n.rejected_body', { activity: activityName(p.activity) }), p.comment].filter(Boolean).join('\n') };
     case 'webinar_excused':
       return { icon: 'ℹ️', title: t('n.webinar_excused_title'), body: t('n.webinar_excused_body'), href: '/app/learning' };
+    case 'role_removed':
+      return { icon: 'ℹ️', title: t('n.role_removed_title'), body: t('n.role_removed_body'), href: '/app/roles' };
     case 'qualified':
       return { icon: '🎉', title: t('n.qualified_title'), body: t('n.qualified_body'), href: '/app/profile' };
     case 'claim_submitted':

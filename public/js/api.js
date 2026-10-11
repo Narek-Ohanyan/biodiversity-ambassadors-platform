@@ -110,6 +110,7 @@ export const webinarCheckOut = () => sb.rpc('webinar_check_out').then(unwrap);
 // Volunteer roles (e.g. Rapporteur): signing up before the deadline records the ambassador and reveals the meeting link.
 export const myRoles = () => sb.rpc('my_roles').then(unwrap);
 export const signupRole = (role) => sb.rpc('signup_role', { p_role: role }).then(unwrap);
+export const cancelRole = (role) => sb.rpc('cancel_role', { p_role: role }).then(unwrap);
 
 export async function uploadCertificates(files) {
   const uid = state.user.id;
@@ -186,6 +187,7 @@ export const mgr = {
     }
     return data;
   },
+  removeRoleSignup: (userId, role) => sb.rpc('remove_role_signup', { p_user: userId, p_role: role }).then(unwrap),
   roleSignups: (role) => sb.rpc('manager_role_signups', { p_role: role }).then(unwrap),
   webinar: () => sb.rpc('manager_webinar').then(unwrap),
   setWebinarWindow: (checkin, checkout) => sb.rpc('set_webinar_window', { p_checkin: checkin, p_checkout: checkout }).then(unwrap),

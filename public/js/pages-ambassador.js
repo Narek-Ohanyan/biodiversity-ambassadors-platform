@@ -1,6 +1,6 @@
 // Ambassador platform: My Profile, My Learning (credit framework + claim flows), UNICEF modules.
 import { t, getLang } from './i18n.js';
-import { html, raw, esc, actions, forms, openModal, toast, errText, setBusy, wordCount, localName, fmtDate, fmtDateTime, safeUrl, resizeImage, initials, skillLabel, langLabel, profLabel } from './lib.js';
+import { html, raw, esc, actions, forms, openModal, confirmDialog, toast, errText, setBusy, wordCount, localName, fmtDate, fmtDateTime, safeUrl, resizeImage, initials, skillLabel, langLabel, profLabel } from './lib.js';
 import * as api from './api.js';
 import { state, isLocked } from './api.js';
 import { SKILLS, LANGUAGES, PROFICIENCY, UNIVERSITIES } from './catalog.js';
@@ -321,7 +321,8 @@ function rapporteurCard(r) {
     <p style="margin:.8rem 0">${c[L].summary}</p>
     <div class="chips" style="margin-bottom:1rem"><span class="chip info">🎥 ${t('roles.meeting', { when: yerevanWhen(r.meeting_at) })}</span>
       <span class="chip ${r.open ? 'credits' : 'neutral'}">⏰ ${t('roles.deadline', { when: yerevanWhen(r.deadline) })}</span></div>
-    <div class="row">${action}<a class="btn secondary" href="${safeUrl(c.templateUrl)}" target="_blank" rel="noopener noreferrer">${t('roles.template')} ↗</a></div>
+    <div class="row">${action}<a class="btn secondary" href="${safeUrl(c.templateUrl)}" target="_blank" rel="noopener noreferrer">${t('roles.template')} ↗</a>
+      ${r.signed_up ? html`<button class="btn ghost" type="button" data-act="role-cancel" data-role="rapporteur">${t('roles.cancel')}</button>` : ''}</div>
     <p class="muted small" style="margin:.8rem 0 0">${note}</p></div>`;
 }
 
@@ -335,17 +336,17 @@ export async function rolesView() {
       <h2 style="margin-top:2rem;font-size:1.4rem">${t('roles.instructions')}</h2>
       <div class="role-guide">${c[L].sections.map((s) => html`<section class="card flat" style="margin-bottom:1rem"><h3 style="margin-top:0">${s.title}</h3>${roleBlocks(s.blocks)}</section>`)}</div>`,
     mount(root) {
+      const redraw = () => { root.querySelector('#role-slot').innerHTML = rapporteurCard(roles.rapporteur).s; };
       actions['role-signup'] = async (el) => {
-        // Opened inside the click so popup blockers allow it; pointed at the Zoom link once sign-up succeeds.
-        const win = window.open('', '_blank');
         setBusy(el, true, t('common.wait'));
-        try {
-          roles = await api.signupRole(el.dataset.role);
-          const url = roles.rapporteur.zoom_url;
-          if (win && url) { win.opener = null; win.location.href = url; } else win?.close();
-          toast(t('roles.signed_ok'));
-          root.querySelector('#role-slot').innerHTML = rapporteurCard(roles.rapporteur).s;
-        } catch (e) { win?.close(); toast(errText(e), 'bad'); setBusy(el, false); }
+        try { roles = await api.signupRole(el.dataset.role); toast(t('roles.signed_ok')); redraw(); }
+        catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
+      };
+      actions['role-cancel'] = async (el) => {
+        if (!(await confirmDialog({ title: t('roles.cancel'), message: t('roles.cancel_confirm'), danger: true, confirmText: t('roles.cancel') }))) return;
+        setBusy(el, true, t('common.wait'));
+        try { roles = await api.cancelRole(el.dataset.role); toast(t('roles.cancelled')); redraw(); }
+        catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
       };
     },
   };
