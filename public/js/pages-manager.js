@@ -18,7 +18,7 @@ const miniProgress = (p) => html`<div class="mini-progress">${['core', 'elective
   const x = p.categories[c];
   return html`<div><span>${t(`cat_short.${c}`)}</span><div class="bar sm ${c}"><i style="width:${(x.earned / x.required) * 100}%"></i></div><span>${x.earned}/${x.required}</span></div>`; })}</div>`;
 
-const webinarChip = (w) => (!w || w.attended ? '' : w.excused ? html`<div><span class="chip info">${t('mgr.webinar')}: ${t('webinar.state_excused')}</span></div>`
+const webinarChip = (w) => (!w || w.attended ? '' : w.watched ? html`<div><span class="chip info">${t('mgr.webinar')}: ${t('webinar.state_watched')}</span></div>` : w.excused ? html`<div><span class="chip info">${t('mgr.webinar')}: ${t('webinar.state_excused')}</span></div>`
   : html`<div><span class="chip neutral">${t('mgr.webinar')}: ${t('webinar.state_none')}</span></div>`);
 
 // ── Overview ────────────────────────────────────────────────────────────────
@@ -171,11 +171,11 @@ export async function webinarView() {
   const fmtT = (v) => (v ? fmtDateTime(v) : '—');
   const stats = () => [
     [d.rows.filter((r) => r.checked_in_at).length, 'webinar.stat_in'], [d.rows.filter((r) => r.done).length, 'webinar.stat_done'],
-    [d.rows.filter((r) => r.excused).length, 'webinar.stat_excused'], [d.rows.filter((r) => r.priority).length, 'webinar.stat_priority']];
+    [d.rows.filter((r) => r.watched).length, 'webinar.stat_watched'], [d.rows.filter((r) => r.excused).length, 'webinar.stat_excused'], [d.rows.filter((r) => r.priority).length, 'webinar.stat_priority']];
   const winRow = (key, open, label) => html`<div class="row" style="padding:.6rem 0;border-top:1px solid var(--line)"><b style="min-width:110px">${label}</b>
     <span class="chip ${open ? 'ok' : 'neutral'}">${open ? t('webinar.open') : t('webinar.closed')}</span><div class="grow"></div>
     <button class="btn ${open ? 'danger' : ''} sm" type="button" data-act="web-toggle" data-w="${key}">${open ? t('webinar.deactivate') : t('webinar.activate')}</button></div>`;
-  const filtered = () => d.rows.filter((r) => ({ all: true, in: r.checked_in_at && !r.checked_out_at, missing: !r.done && !r.excused })[ui.filter]
+  const filtered = () => d.rows.filter((r) => ({ all: true, in: r.checked_in_at && !r.checked_out_at, missing: !r.done && !r.excused && !r.watched })[ui.filter]
       && (!ui.q || `${fullName(r)} ${r.email}`.toLowerCase().includes(ui.q)))
     .sort((a, b) => String(b.checked_in_at || '').localeCompare(String(a.checked_in_at || '')) || String(a.email).localeCompare(String(b.email)));
   const rowsHtml = () => {
@@ -185,7 +185,7 @@ export async function webinarView() {
       <td class="small">${r.university ? localUniversity(r.university) : '—'}</td>
       <td class="small">${fmtT(r.checked_in_at)}</td><td class="small">${fmtT(r.checked_out_at)}</td>
       <td><div class="chips">${r.done ? html`<span class="chip ok">✓ ${t('webinar.state_done')}</span>` : r.checked_out_at ? html`<span class="chip bad">${t('webinar.state_out')}</span>` : r.checked_in_at ? html`<span class="chip pending">${t('webinar.state_in')}</span>` : html`<span class="chip neutral">${t('webinar.state_none')}</span>`}
-        ${r.excused ? html`<span class="chip info">${t('webinar.state_excused')}</span>` : ''}${r.priority ? html`<span class="chip credits">★ ${t('mgr.priority')}</span>` : ''}</div></td>
+        ${r.watched ? html`<span class="chip ok">✓ ${t('webinar.state_watched')}</span>` : ''}${r.excused ? html`<span class="chip info">${t('webinar.state_excused')}</span>` : ''}${r.priority ? html`<span class="chip credits">★ ${t('mgr.priority')}</span>` : ''}</div></td>
       <td>${r.done ? '' : html`<button class="btn ${r.excused ? 'secondary' : 'ghost'} sm" type="button" data-act="web-excuse" data-id="${r.id}" data-ex="${r.excused ? '0' : '1'}">${r.excused ? t('webinar.unexcuse') : t('webinar.excuse')}</button>`}</td></tr>`)}`
       : html`<tr><td colspan="6" class="center muted" style="padding:2rem">${t('mgr.none')}</td></tr>`;
   };

@@ -106,6 +106,8 @@ export const unicefQuizQuestions = (module) => sb.rpc('unicef_quiz_questions_for
 export const myWebinarStatus = () => sb.rpc('my_webinar_status').then(unwrap);
 export const webinarCheckIn = () => sb.rpc('webinar_check_in').then(unwrap);
 export const webinarCheckOut = () => sb.rpc('webinar_check_out').then(unwrap);
+export const webinarOpenRecording = () => sb.rpc('webinar_open_recording').then(unwrap);
+export const webinarConfirmRecording = () => sb.rpc('webinar_confirm_recording').then(unwrap);
 
 // Volunteer roles (e.g. Rapporteur): signing up before the deadline records the ambassador and reveals the meeting link.
 export const myRoles = () => sb.rpc('my_roles').then(unwrap);

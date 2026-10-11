@@ -222,6 +222,7 @@ function webinarHtml(w, progress) {
   const wp = progress.categories.webinar;
   const L = getLang();
   const status = w.done ? html`<span class="chip ok">✓ ${w.bonus ? t('webinar.attended_bonus') : t('webinar.attended_elective')}</span>`
+    : w.recording_watched ? html`<span class="chip ok">✓ ${t('webinar.recording_done')}</span>`
     : w.excused ? html`<span class="chip info">${t('webinar.excused_note')}</span>`
     : w.checked_in_at ? html`<span class="chip pending">${t('webinar.checked_in_at', { time: fmtDateTime(w.checked_in_at) })}</span>`
     : html`<span class="chip neutral">${t('webinar.not_attended')}</span>`;
@@ -229,6 +230,18 @@ function webinarHtml(w, progress) {
   const canOut = !locked && w.checkout_open && w.checked_in_at && !w.checked_out_at;
   const hint = w.done ? '' : !w.checked_in_at ? (w.checkin_open ? '' : t('webinar.checkin_closed_note'))
     : (!w.checked_out_at && !w.checkout_open ? t('webinar.checkout_closed_note') : '');
+  // Anyone who missed the live session meets the mandatory requirement by watching the recording
+  // (opened from here first, then confirmed). It satisfies the requirement but earns no credits.
+  const needsRecording = !w.done && !w.excused && !w.recording_watched;
+  const recording = w.done || !w.recording_url ? '' : html`<div class="activity" style="margin-top:.7rem">
+      <div><h3>${t('webinar.recording_title')}</h3>
+        <div class="meta">${w.recording_watched ? html`<span class="chip ok">✓ ${t('webinar.recording_done')}</span>` : needsRecording ? html`<span class="chip pending">${t('webinar.mandatory')}</span>` : ''}</div>
+        <p class="muted small" style="margin:.5rem 0 0">${w.recording_watched ? t('webinar.recording_ok') : needsRecording ? t('webinar.recording_required') : t('webinar.recording_optional')}</p>
+        ${needsRecording ? html`<p class="muted small" style="margin:.4rem 0 0">${t('webinar.recording_confirm_hint')}</p>` : ''}</div>
+      <div class="actions"><div class="row" style="flex-wrap:nowrap">
+        <a class="btn ${needsRecording && !w.recording_opened ? '' : 'secondary'}" data-rec-open href="${safeUrl(w.recording_url)}" target="_blank" rel="noopener noreferrer">${t('webinar.recording_watch')} ↗</a>
+        ${needsRecording ? html`<button class="btn" type="button" data-act="webinar-rec-confirm" ${w.recording_opened && !locked ? '' : raw('disabled')}>${t('webinar.recording_confirm')}</button>` : ''}</div></div>
+    </div>`;
   return html`<section class="cat-block ${wp.complete ? 'closed' : ''}"><div class="cat-head"><span class="dot" style="background:var(--elective)"></span>
       <h2>${t('cat.webinar')}</h2><span class="chip pending">${t('webinar.mandatory')}</span>
       ${wp.complete ? html`<span class="chip ok">✓ ${t('learn.cat_complete')}</span>` : ''}${wp.priority ? html`<span class="chip credits">★ ${t('webinar.priority_chip')}</span>` : ''}</div>
@@ -240,7 +253,7 @@ function webinarHtml(w, progress) {
         ${w.done ? '' : html`<button class="btn" type="button" data-act="webinar-in" ${canIn ? '' : raw('disabled')}>${t('webinar.check_in')}</button>
         <button class="btn" type="button" data-act="webinar-out" ${canOut ? '' : raw('disabled')}>${t('webinar.check_out')}</button>`}</div></div>
       ${hint ? html`<div class="sub"><span class="muted small">${hint}</span></div>` : ''}
-    </div></section>`;
+    </div>${recording}</section>`;
 }
 
 export async function learningView() {
@@ -281,6 +294,16 @@ export async function learningView() {
       actions['webinar-out'] = async (el) => {
         setBusy(el, true, t('common.wait'));
         try { await api.webinarCheckOut(); toast(t('webinar.checked_out_ok')); navigate(location.pathname); }
+        catch (e) { toast(errText(e), 'bad'); await refresh(); }
+      };
+      // Opening the recording is recorded (the confirm button needs it); the link itself opens normally in a new tab.
+      slot().addEventListener('click', async (e) => {
+        if (!e.target.closest('[data-rec-open]')) return;
+        try { draw(await api.webinarOpenRecording()); } catch { /* the link still opens */ }
+      });
+      actions['webinar-rec-confirm'] = async (el) => {
+        setBusy(el, true, t('common.wait'));
+        try { await api.webinarConfirmRecording(); toast(t('webinar.recording_ok')); navigate(location.pathname); }
         catch (e) { toast(errText(e), 'bad'); await refresh(); }
       };
       // The manager opens/closes each window live during the event, so keep the buttons current.
