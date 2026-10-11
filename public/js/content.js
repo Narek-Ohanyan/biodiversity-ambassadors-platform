@@ -48,4 +48,70 @@ export const CONTENT = {
       },
     },
   ],
+  // Volunteer role pages. A section is a list of blocks: { p } paragraph, { ul } bullet list, { quotes } phrase list.
+  rapporteur: {
+    templateUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfalYwHsQe1kgntilyZGl_pYr2V4OpWzF2VDWocHmjH21LHOw/viewform?usp=sharing&ouid=112841245184759669036',
+    en: {
+      event: 'CBD COP17 Yerevan — parallel sessions, roundtable discussions, and side events',
+      summary: 'Student rapporteurs listen to COP17 sessions, capture the key points, and prepare a clear, accurate summary of each discussion. Rapporteurs are volunteers who put themselves forward.',
+      sections: [
+        { title: 'What a student rapporteur does', blocks: [
+          { ul: ['Listen carefully.', 'Capture the most important information.', 'Prepare a clear and accurate summary of the discussion.'] },
+          { p: 'Rapporteurs are not expected to write down everything that is said. Focus on the main ideas, evidence, perspectives, disagreements, proposed solutions, and conclusions.' },
+          { p: 'Your notes may be used for event reports, university communications, COP17 summaries, or other materials after the event.' }] },
+        { title: 'Before the session', blocks: [{ ul: [
+          'Arrive 10–15 minutes early if possible.', 'Check the session title, time, and room.', 'Note the organizer(s), moderator, and speakers.',
+          'Read the session description or agenda if available.', 'Make sure your notebook, laptop, or phone is ready and charged.',
+          'Have the Rapporteur Template ready. If you misplace it, you can download it online again; a few printed templates may also be available.'] }] },
+        { title: 'At the beginning', blocks: [
+          { p: 'At the top of the Rapporteur Template, complete these placeholders:' },
+          { ul: ['Event name: Science Policy Forum', 'Session number and title (e.g., Achieving 30x30 … (Session 11))', 'Date, time, and location', 'Any deviations from the published speaker/moderator list'] },
+          { p: 'Most of this information can be found in the published session agenda.' }] },
+        { title: 'During the session', blocks: [
+          { p: 'Do not write everything down. Focus on the most important points:' },
+          { ul: ['Key messages: the 2–5 main points.', 'Facts and evidence: important statistics, research, examples, or case studies.', 'Different perspectives: where speakers agree or disagree.',
+            'Solutions and recommendations: what actions or changes are proposed.', 'Questions and discussion: key questions or concerns raised by participants.', 'Outcomes: commitments, conclusions, decisions, and next steps.'] },
+          { p: 'Document who said what. These phrases help with citations:' },
+          { quotes: ['“X explained that…”', '“X argued that…”', '“X emphasized…”', '“Several speakers agreed that…”', '“Participants raised concerns about…”', '“There was disagreement over…”'] },
+          { ul: ['Use quotation marks only when you are confident you captured the speaker’s exact words — and always identify the speaker.', 'If you are unsure about a fact, do not guess; mark it to be checked later.'] }] },
+        { title: 'At the end', blocks: [
+          { p: 'Pay particular attention to:' },
+          { ul: ['Main conclusions / take-home messages', 'Gaps and challenges noted', 'Recommendations and solutions', 'Commitments', 'Next steps', 'Unresolved questions'] },
+          { p: 'Immediately after the session, spend a few minutes reviewing your notes and filling in points you may have missed.' }] },
+        { title: 'Remember', blocks: [{ ul: ['Be accurate.', 'Be concise.', 'Attribute statements to the right person.', 'Capture different perspectives.',
+          'Do not add your own opinions to what others said. If you feel compelled, write your opinion separately and clearly label it as yours, not something a speaker said.'] }] },
+      ],
+    },
+    hy: {
+      event: 'Կենսաբազմազանության մասին կոնվենցիայի COP17, Երևան՝ զուգահեռ նիստեր, կլոր սեղան քննարկումներ և կողմնակի միջոցառումներ',
+      summary: 'Ուսանող ռապորտյորները հետևում են COP17-ի նիստերին, գրանցում հիմնական կետերը և պատրաստում քննարկման հստակ ու ճշգրիտ ամփոփագիր։ Ռապորտյորները կամավորներ են, ովքեր ինքնադիմում են։',
+      sections: [
+        { title: 'Ինչ է անում ուսանող ռապորտյորը', blocks: [
+          { ul: ['Ուշադիր լսում է։', 'Գրանցում է ամենակարևոր տեղեկությունը։', 'Պատրաստում է քննարկման հստակ և ճշգրիտ ամփոփագիր։'] },
+          { p: 'Ռապորտյորներից չի պահանջվում գրի առնել ամեն ասվածը։ Կենտրոնացեք հիմնական գաղափարների, ապացույցների, տեսակետների, տարակարծությունների, առաջարկվող լուծումների և եզրակացությունների վրա։' },
+          { p: 'Ձեր նշումները կարող են օգտագործվել միջոցառման հաշվետվությունների, համալսարանական հաղորդագրությունների, COP17-ի ամփոփագրերի կամ միջոցառումից հետո այլ նյութերի համար։' }] },
+        { title: 'Նիստից առաջ', blocks: [{ ul: [
+          'Հնարավորության դեպքում ժամանեք 10–15 րոպե շուտ։', 'Ստուգեք նիստի վերնագիրը, ժամը և սրահը։', 'Նշեք կազմակերպիչ(ներ)ին, մոդերատորին և բանախոսներին։',
+          'Եթե հասանելի է, կարդացեք նիստի նկարագրությունը կամ օրակարգը։', 'Համոզվեք, որ նոթատետրը, նոութբուքը կամ հեռախոսը պատրաստ և լիցքավորված են։',
+          'Պատրաստ պահեք ռապորտյորի ձևանմուշը։ Եթե այն կորցնեք, կարող եք նորից ներբեռնել առցանց. կարող են հասանելի լինել նաև մի քանի տպագիր օրինակներ։'] }] },
+        { title: 'Սկզբում', blocks: [
+          { p: 'Ռապորտյորի ձևանմուշի վերևում լրացրեք հետևյալ դաշտերը՝' },
+          { ul: ['Միջոցառման անվանումը՝ Science Policy Forum', 'Նիստի համարը և վերնագիրը (օր.՝ Achieving 30x30 … (Session 11))', 'Ամսաթիվը, ժամը և վայրը', 'Հրապարակված բանախոսների/մոդերատորների ցանկից ցանկացած շեղում'] },
+          { p: 'Այս տեղեկությունների մեծ մասը կարելի է գտնել հրապարակված նիստի օրակարգում։' }] },
+        { title: 'Նիստի ընթացքում', blocks: [
+          { p: 'Ամեն ինչ գրի առնել պետք չէ։ Կենտրոնացեք ամենակարևոր կետերի վրա՝' },
+          { ul: ['Հիմնական ուղերձներ՝ 2–5 գլխավոր կետերը։', 'Փաստեր և ապացույցներ՝ կարևոր վիճակագրություն, հետազոտություններ, օրինակներ կամ դեպքի ուսումնասիրություններ։', 'Տարբեր տեսակետներ՝ որտեղ են բանախոսները համաձայն կամ տարակարծիք։',
+            'Լուծումներ և առաջարկություններ՝ ինչ գործողություններ կամ փոփոխություններ են առաջարկվում։', 'Հարցեր և քննարկում՝ մասնակիցների բարձրացրած հիմնական հարցերն ու մտահոգությունները։', 'Արդյունքներ՝ պարտավորություններ, եզրակացություններ, որոշումներ և հաջորդ քայլեր։'] },
+          { p: 'Փաստաթղթավորեք՝ ով ինչ ասաց։ Մեջբերումների համար կարող եք օգտագործել հետևյալ ձևակերպումները՝' },
+          { quotes: ['«X-ը բացատրեց, որ…»', '«X-ը պնդեց, որ…»', '«X-ը շեշտեց…»', '«Մի քանի բանախոս համաձայնեցին, որ…»', '«Մասնակիցները մտահոգություն հայտնեցին…»', '«… շուրջ կար տարակարծություն»'] },
+          { ul: ['Չակերտները օգտագործեք միայն այն դեպքում, երբ վստահ եք, որ գրի եք առել բանախոսի ճշգրիտ խոսքերը, և միշտ նշեք մեջբերման հեղինակին։', 'Եթե որևէ փաստի մեջ վստահ չեք, մի կռահեք. նշեք, որ այն հետո պետք է ստուգել։'] }] },
+        { title: 'Վերջում', blocks: [
+          { p: 'Հատուկ ուշադրություն դարձրեք՝' },
+          { ul: ['Հիմնական եզրակացություններին / ուղերձներին', 'Նշված բացերին և մարտահրավերներին', 'Առաջարկություններին և լուծումներին', 'Պարտավորություններին', 'Հաջորդ քայլերին', 'Չլուծված հարցերին'] },
+          { p: 'Նիստից անմիջապես հետո մի քանի րոպե հատկացրեք ձեր նշումները վերանայելու և բաց թողած կետերը լրացնելու համար։' }] },
+        { title: 'Հիշեք', blocks: [{ ul: ['Եղեք ճշգրիտ։', 'Եղեք հակիրճ։', 'Յուրաքանչյուր պնդում վերագրեք ճիշտ մարդուն։', 'Արտացոլեք տարբեր տեսակետները։',
+          'Ուրիշների խոսքերին մի ավելացրեք սեփական կարծիքը։ Եթե ցանկանում եք գրել ձեր կարծիքը, գրեք առանձին և հստակ նշեք, որ դա ձերն է, ոչ թե բանախոսի ասածը։'] }] },
+      ],
+    },
+  },
 };

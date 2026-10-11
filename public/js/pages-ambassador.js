@@ -6,6 +6,7 @@ import { state, isLocked } from './api.js';
 import { SKILLS, LANGUAGES, PROFICIENCY, UNIVERSITIES } from './catalog.js';
 import { navigate } from './router.js';
 import { MEDIA_BASE } from './config.js';
+import { CONTENT } from './content.js';
 import { formMsg, localUniversity } from './pages-public.js';
 
 const opt = (list, sel) => list.map((o) => html`<option value="${o.key}" ${o.key === sel ? raw('selected') : ''}>${o[getLang()]}</option>`);
@@ -284,6 +285,68 @@ export async function learningView() {
       };
       // The manager opens/closes each window live during the event, so keep the buttons current.
       const timer = setInterval(() => { if (!slot()) clearInterval(timer); else refresh(); }, 10000);
+    },
+  };
+}
+
+// ── Roles (volunteer roles; first one: Rapporteur) ─────────────────────────
+// Month names come from a table, not Intl: browsers without Armenian locale data silently fall back to English.
+const MONTHS = {
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  hy: ['հունվարի', 'փետրվարի', 'մարտի', 'ապրիլի', 'մայիսի', 'հունիսի', 'հուլիսի', 'օգոստոսի', 'սեպտեմբերի', 'հոկտեմբերի', 'նոյեմբերի', 'դեկտեմբերի'],
+};
+function yerevanWhen(iso) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Yerevan' })
+    .formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+  const L = getLang();
+  return `${parts.day} ${MONTHS[L][Number(parts.month) - 1]}${L === 'hy' ? ',' : ' at'} ${parts.hour}:${parts.minute}`;
+}
+
+function roleBlocks(blocks) {
+  return blocks.map((b) => (b.p ? html`<p>${b.p}</p>`
+    : b.quotes ? html`<ul class="role-quotes">${b.quotes.map((q) => html`<li>${q}</li>`)}</ul>`
+    : html`<ul>${b.ul.map((i) => html`<li>${i}</li>`)}</ul>`));
+}
+
+function rapporteurCard(r) {
+  const L = getLang(), c = CONTENT.rapporteur;
+  const status = r.signed_up ? html`<span class="chip ok">✓ ${t('roles.signed_up')}</span>` : !r.open ? html`<span class="chip bad">${t('roles.closed')}</span>` : '';
+  const action = r.signed_up
+    ? html`<a class="btn" href="${safeUrl(r.zoom_url)}" target="_blank" rel="noopener noreferrer">${t('roles.join_zoom')} ↗</a>`
+    : html`<button class="btn" type="button" data-act="role-signup" data-role="rapporteur" ${r.open ? '' : raw('disabled')}>${t('roles.become_rapporteur')}</button>`;
+  const note = r.signed_up ? t('roles.signed_note') : r.open ? t('roles.signup_note') : t('roles.closed_note');
+  return html`<div class="card"><div class="row" style="align-items:center;gap:.6rem"><h2 style="margin:0;font-size:1.4rem">${t('roles.rapporteur')}</h2>
+      <span class="chip pending">${t('roles.volunteer')}</span>${status}</div>
+    <p class="muted small" style="margin:.4rem 0 0">${c[L].event}</p>
+    <p style="margin:.8rem 0">${c[L].summary}</p>
+    <div class="chips" style="margin-bottom:1rem"><span class="chip info">🎥 ${t('roles.meeting', { when: yerevanWhen(r.meeting_at) })}</span>
+      <span class="chip ${r.open ? 'credits' : 'neutral'}">⏰ ${t('roles.deadline', { when: yerevanWhen(r.deadline) })}</span></div>
+    <div class="row">${action}<a class="btn secondary" href="${safeUrl(c.templateUrl)}" target="_blank" rel="noopener noreferrer">${t('roles.template')} ↗</a></div>
+    <p class="muted small" style="margin:.8rem 0 0">${note}</p></div>`;
+}
+
+export async function rolesView() {
+  let roles = await api.myRoles();
+  const L = getLang(), c = CONTENT.rapporteur;
+  return {
+    html: html`<div class="main-head"><h1>${t('roles.title')}</h1></div>
+      <p class="muted" style="max-width:720px">${t('roles.intro')}</p>
+      <div id="role-slot">${rapporteurCard(roles.rapporteur)}</div>
+      <h2 style="margin-top:2rem;font-size:1.4rem">${t('roles.instructions')}</h2>
+      <div class="role-guide">${c[L].sections.map((s) => html`<section class="card flat" style="margin-bottom:1rem"><h3 style="margin-top:0">${s.title}</h3>${roleBlocks(s.blocks)}</section>`)}</div>`,
+    mount(root) {
+      actions['role-signup'] = async (el) => {
+        // Opened inside the click so popup blockers allow it; pointed at the Zoom link once sign-up succeeds.
+        const win = window.open('', '_blank');
+        setBusy(el, true, t('common.wait'));
+        try {
+          roles = await api.signupRole(el.dataset.role);
+          const url = roles.rapporteur.zoom_url;
+          if (win && url) { win.opener = null; win.location.href = url; } else win?.close();
+          toast(t('roles.signed_ok'));
+          root.querySelector('#role-slot').innerHTML = rapporteurCard(roles.rapporteur).s;
+        } catch (e) { win?.close(); toast(errText(e), 'bad'); setBusy(el, false); }
+      };
     },
   };
 }
