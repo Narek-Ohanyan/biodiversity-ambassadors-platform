@@ -86,7 +86,7 @@ export async function saveProfile(values, photoBlob) {
     if (photo_path) sb.storage.from('photos').remove([photo_path]);
     photo_path = path;
   }
-  const row = { user_id: uid, ...values, photo_path };
+  const row = { user_id: uid, ...values, photo_path, ...(photoBlob ? { photo_pos_x: null, photo_pos_y: null } : {}) };
   unwrap(await sb.from('profiles').upsert(row, { onConflict: 'user_id' }));
   await refreshMe();
 }

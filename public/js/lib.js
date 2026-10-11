@@ -105,6 +105,10 @@ export async function sha256Hex(file) {
 }
 
 // Downscale a profile photo in the browser (keeps uploads small and strips EXIF).
+// Where the square display window sits inside a profile photo (percentages, see profiles.photo_pos_x/y).
+// Unset falls back to centred horizontally and top-biased vertically so heads are not cut off.
+export const photoPos = (p) => `object-position:${p?.photo_pos_x ?? 50}% ${p?.photo_pos_y ?? 15}%`;
+
 export function resizeImage(file, max = 640, quality = 0.86) {
   return new Promise((resolve, reject) => {
     const img = new Image();

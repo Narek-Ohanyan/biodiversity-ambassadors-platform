@@ -1,6 +1,6 @@
 // Ambassador platform: My Profile, My Learning (credit framework + claim flows), UNICEF modules.
 import { t, getLang } from './i18n.js';
-import { html, raw, esc, actions, forms, openModal, confirmDialog, toast, errText, setBusy, wordCount, localName, fmtDate, fmtDateTime, safeUrl, resizeImage, initials, skillLabel, langLabel, profLabel } from './lib.js';
+import { html, raw, esc, photoPos, actions, forms, openModal, confirmDialog, toast, errText, setBusy, wordCount, localName, fmtDate, fmtDateTime, safeUrl, resizeImage, initials, skillLabel, langLabel, profLabel } from './lib.js';
 import * as api from './api.js';
 import { state, isLocked } from './api.js';
 import { SKILLS, LANGUAGES, PROFICIENCY, UNIVERSITIES } from './catalog.js';
@@ -67,7 +67,7 @@ export async function profileView() {
 
       <div class="field"><label>${t('profile.photo')} *</label>
         <div class="photo-pick">
-          <div class="avatar" id="photo-preview">${p.photo_path ? html`<img src="${api.photoUrl(p.photo_path)}" alt="" style="width:100%;height:100%;object-fit:cover">` : initials(p.first_name, p.last_name)}</div>
+          <div class="avatar" id="photo-preview">${p.photo_path ? html`<img src="${api.photoUrl(p.photo_path)}" alt="" style="width:100%;height:100%;object-fit:cover;${photoPos(p)}">` : initials(p.first_name, p.last_name)}</div>
           <div><input type="file" id="p-photo" accept="image/jpeg,image/png,image/webp"><div class="hint">${t('profile.photo_hint')}</div></div></div></div>
 
       <div class="field"><label>${t('profile.skills')} * <span class="muted" style="font-weight:400">— ${t('profile.skills_hint')}</span></label>

@@ -124,14 +124,14 @@ input[type=file] { width: 100%; padding: .55rem; border: 1.5px dashed var(--line
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .8rem; } .gallery img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: var(--radius); }
 .team { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
 .person { display: grid; grid-template-columns: 150px 1fr; gap: 1.4rem; align-items: start; }
-.avatar { width: 100%; aspect-ratio: 1; border-radius: 16px; object-fit: cover; background: var(--forest-100); display: grid; place-items: center; font: 700 2.4rem var(--font-head); color: var(--forest-700); overflow: hidden; }
+.avatar { width: 100%; aspect-ratio: 1; border-radius: 16px; object-fit: cover; object-position: 50% 15%; background: var(--forest-100); display: grid; place-items: center; font: 700 2.4rem var(--font-head); color: var(--forest-700); overflow: hidden; }
 .person h3 { margin-bottom: .1rem; } .person .role { color: var(--apricot-dark); font-weight: 600; font-size: .9rem; margin-bottom: .6rem; }
 
 .amb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.2rem; }
-.amb-card { padding: 0; overflow: hidden; cursor: pointer; text-align: left; border: 1px solid var(--line); background: var(--paper); border-radius: var(--radius); box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s; }
+.amb-card { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; padding: 0; overflow: hidden; cursor: pointer; text-align: left; border: 1px solid var(--line); background: var(--paper); border-radius: var(--radius); box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s; }
 .amb-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(23,36,29,.12); }
-.amb-card .photo { aspect-ratio: 1; width: 100%; object-fit: cover; background: var(--forest-100); }
-.amb-card .body { padding: 1rem 1.1rem 1.2rem; } .amb-card h3 { margin: 0 0 .15rem; font-size: 1.1rem; }
+.amb-card .photo { flex: none; aspect-ratio: 1; width: 100%; object-fit: cover; object-position: 50% 15%; background: var(--forest-100); }
+.amb-card .body { flex: 1; padding: 1rem 1.1rem 1.2rem; } .amb-card h3 { margin: 0 0 .15rem; font-size: 1.1rem; }
 .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); border: 2px dashed var(--line-strong); border-radius: var(--radius); }
 .auth-wrap { display: grid; grid-template-columns: 1.1fr 1fr; gap: 3rem; align-items: start; }
 .tabs { display: flex; gap: .3rem; background: #ece8da; padding: .3rem; border-radius: 999px; margin-bottom: 1.4rem; }
