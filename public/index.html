@@ -16,8 +16,9 @@
   <!-- Hostinger's CDN caches static assets for 7 days regardless of the origin file's freshness, and
        there's no build step here to fingerprint filenames — so cache-busting is manual: bump every
        ?v=N below (this stylesheet, the import map, and main.js's own tag) whenever CSS/JS changes,
-       or visitors on cached edge nodes won't see the fix for up to a week. -->
-  <link rel="stylesheet" href="/css/styles.css?v=4">
+       or visitors on cached edge nodes won't see the fix for up to a week. Also don't request the new
+       ?v= URLs until the deploy has finished: a request that lands mid-deploy gets the old file cached under the new URL. -->
+  <link rel="stylesheet" href="/css/styles.css?v=5">
 
   <!-- Open Graph / social link previews. These stay static (not updated per-route by main.js's SEO
        handling) because link-preview bots and most crawlers don't execute JS, so whatever's here is
@@ -65,21 +66,21 @@
   <script type="importmap">
   {
     "imports": {
-      "/js/api.js": "/js/api.js?v=4",
-      "/js/catalog.js": "/js/catalog.js?v=4",
-      "/js/config.js": "/js/config.js?v=4",
-      "/js/content.js": "/js/content.js?v=4",
-      "/js/i18n.js": "/js/i18n.js?v=4",
-      "/js/layouts.js": "/js/layouts.js?v=4",
-      "/js/lib.js": "/js/lib.js?v=4",
-      "/js/pages-ambassador.js": "/js/pages-ambassador.js?v=4",
-      "/js/pages-common.js": "/js/pages-common.js?v=4",
-      "/js/pages-manager.js": "/js/pages-manager.js?v=4",
-      "/js/pages-public.js": "/js/pages-public.js?v=4",
-      "/js/router.js": "/js/router.js?v=4"
+      "/js/api.js": "/js/api.js?v=5",
+      "/js/catalog.js": "/js/catalog.js?v=5",
+      "/js/config.js": "/js/config.js?v=5",
+      "/js/content.js": "/js/content.js?v=5",
+      "/js/i18n.js": "/js/i18n.js?v=5",
+      "/js/layouts.js": "/js/layouts.js?v=5",
+      "/js/lib.js": "/js/lib.js?v=5",
+      "/js/pages-ambassador.js": "/js/pages-ambassador.js?v=5",
+      "/js/pages-common.js": "/js/pages-common.js?v=5",
+      "/js/pages-manager.js": "/js/pages-manager.js?v=5",
+      "/js/pages-public.js": "/js/pages-public.js?v=5",
+      "/js/router.js": "/js/router.js?v=5"
     }
   }
   </script>
-  <script type="module" src="/js/main.js?v=4"></script>
+  <script type="module" src="/js/main.js?v=5"></script>
 </body>
 </html>
