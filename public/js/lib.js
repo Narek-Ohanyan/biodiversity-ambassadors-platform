@@ -27,8 +27,9 @@ export const personFirst = (p) => p?.[`first_name_${getLang()}`] || p?.first_nam
 export const personLast = (p) => p?.[`last_name_${getLang()}`] || p?.last_name || '';
 export const personName = (p) => `${personFirst(p)} ${personLast(p)}`.trim();
 export const personBio = (p) => p?.[`bio_${getLang()}`] || p?.bio || '';
+export const personFaculty = (p) => p?.[`faculty_${getLang()}`] || p?.faculty || '';
 // Everything a name search should match, in both languages and as typed.
-export const personSearchText = (p) => [p.first_name, p.last_name, p.first_name_hy, p.last_name_hy, p.first_name_en, p.last_name_en].filter(Boolean).join(' ');
+export const personSearchText = (p) => [p.first_name, p.last_name, p.first_name_hy, p.last_name_hy, p.first_name_en, p.last_name_en, p.faculty, p.faculty_hy, p.faculty_en].filter(Boolean).join(' ');
 
 const HY_MONTHS = ['հունվարի', 'փետրվարի', 'մարտի', 'ապրիլի', 'մայիսի', 'հունիսի', 'հուլիսի', 'օգոստոսի', 'սեպտեմբերի', 'հոկտեմբերի', 'նոյեմբերի', 'դեկտեմբերի'];
 // Armenian dates are formatted by hand: browsers often ship without Armenian locale data.

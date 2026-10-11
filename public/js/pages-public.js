@@ -1,5 +1,5 @@
 import { t, getLang } from './i18n.js';
-import { html, raw, esc, safeUrl, photoPos, initials, actions, forms, openModal, toast, errText, setBusy, debounce, fmtDate, skillLabel, langLabel, profLabel, localName, personName, personFirst, personLast, personBio, personSearchText } from './lib.js';
+import { html, raw, esc, safeUrl, photoPos, initials, actions, forms, openModal, toast, errText, setBusy, debounce, fmtDate, skillLabel, langLabel, profLabel, localName, personName, personFirst, personLast, personBio, personFaculty, personSearchText } from './lib.js';
 import * as api from './api.js';
 import { state, sb } from './api.js';
 import { CONTENT } from './content.js';
@@ -252,7 +252,7 @@ export function ambassadorBody(a, { showEmail = true } = {}) {
   const social = Object.entries(a.social || {}).filter(([, v]) => v);
   return html`<div class="row" style="align-items:flex-start;gap:1.2rem;flex-wrap:nowrap">
       ${a.photo_path ? html`<img class="avatar" style="width:120px;flex:none;${photoPos(a)}" src="${api.photoUrl(a.photo_path)}" alt="${personName(a)}">` : html`<div class="avatar" style="width:120px;flex:none">${initials(personFirst(a), personLast(a))}</div>`}
-      <div><h3 style="margin-bottom:.1rem">${personName(a)}</h3><div>${localUniversity(a.university)}</div><div class="muted">${a.faculty}</div></div></div>
+      <div><h3 style="margin-bottom:.1rem">${personName(a)}</h3><div>${localUniversity(a.university)}</div><div class="muted">${personFaculty(a)}</div></div></div>
     <p style="margin-top:1rem;white-space:pre-line">${personBio(a)}</p>
     ${a.skills?.length ? html`<h4>${t('profile.skills')}</h4><div class="chips" style="margin-bottom:1rem">${a.skills.map((s) => html`<span class="chip">${skillLabel(s)}</span>`)}</div>` : ''}
     ${a.languages?.length ? html`<h4>${t('profile.languages')}</h4><div class="chips" style="margin-bottom:1rem">${a.languages.map((l) => html`<span class="chip info">${langLabel(l)} · ${profLabel(l.level)}</span>`)}</div>` : ''}
@@ -269,7 +269,7 @@ export async function ambassadorsView() {
   const grid = (items) => (items.length
     ? html`<div class="amb-grid">${items.map((a) => html`<button type="button" class="amb-card" data-act="amb-open" data-id="${a.id}">
         ${a.photo_path ? html`<img class="photo" style="${photoPos(a)}" src="${api.photoUrl(a.photo_path)}" alt="${personName(a)}" loading="lazy">` : html`<div class="photo avatar" style="border-radius:0">${initials(personFirst(a), personLast(a))}</div>`}
-        <div class="body"><h3>${personName(a)}</h3><div class="small">${localUniversity(a.university)}</div><div class="small muted">${a.faculty}</div></div></button>`)}</div>`
+        <div class="body"><h3>${personName(a)}</h3><div class="small">${localUniversity(a.university)}</div><div class="small muted">${personFaculty(a)}</div></div></button>`)}</div>`
     : html`<div class="empty"><p style="font:700 1.3rem var(--font-head);color:var(--forest-900)">${failed ? t('err.generic') : t('amb.empty_title')}</p><p>${t('amb.empty_text')}</p><a class="btn" href="/platform" data-link>${t('home.cta_join')}</a></div>`);
   return {
     html: html`<div class="page-title"><div class="container"><p class="eyebrow">${t('amb.eyebrow')}</p><h1>${t('nav.ambassadors')}</h1>
@@ -284,7 +284,7 @@ export async function ambassadorsView() {
       const apply = () => {
         const s = (q?.value || '').toLowerCase().trim();
         out.innerHTML = grid(list.filter((a) => (!uni?.value || a.university === uni.value)
-          && (!s || `${personSearchText(a)} ${a.faculty} ${a.university}`.toLowerCase().includes(s)))).s;
+          && (!s || `${personSearchText(a)} ${a.university}`.toLowerCase().includes(s)))).s;
       };
       q?.addEventListener('input', debounce(apply, 150)); uni?.addEventListener('change', apply);
       actions['amb-open'] = (el) => {
