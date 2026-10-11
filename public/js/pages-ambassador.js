@@ -310,11 +310,13 @@ function roleBlocks(blocks) {
 
 function rapporteurCard(r) {
   const L = getLang(), c = CONTENT.rapporteur;
-  const status = r.signed_up ? html`<span class="chip ok">✓ ${t('roles.signed_up')}</span>` : !r.open ? html`<span class="chip bad">${t('roles.closed')}</span>` : '';
+  const canSignUp = r.open && r.eligible;
+  const status = r.signed_up ? html`<span class="chip ok">✓ ${t('roles.signed_up')}</span>` : !r.eligible ? html`<span class="chip neutral">🔒 ${t('roles.qualified_only')}</span>`
+    : !r.open ? html`<span class="chip bad">${t('roles.closed')}</span>` : '';
   const action = r.signed_up
     ? html`<a class="btn" href="${safeUrl(r.zoom_url)}" target="_blank" rel="noopener noreferrer">${t('roles.join_zoom')} ↗</a>`
-    : html`<button class="btn" type="button" data-act="role-signup" data-role="rapporteur" ${r.open ? '' : raw('disabled')}>${t('roles.become_rapporteur')}</button>`;
-  const note = r.signed_up ? t('roles.signed_note') : r.open ? t('roles.signup_note') : t('roles.closed_note');
+    : html`<button class="btn" type="button" data-act="role-signup" data-role="rapporteur" ${canSignUp ? '' : raw('disabled')}>${t('roles.become_rapporteur')}</button>`;
+  const note = r.signed_up ? t('roles.signed_note') : !r.eligible ? t('roles.not_eligible_note') : r.open ? t('roles.signup_note') : t('roles.closed_note');
   return html`<div class="card"><div class="row" style="align-items:center;gap:.6rem"><h2 style="margin:0;font-size:1.4rem">${t('roles.rapporteur')}</h2>
       <span class="chip pending">${t('roles.volunteer')}</span>${status}</div>
     <p class="muted small" style="margin:.4rem 0 0">${c[L].event}</p>

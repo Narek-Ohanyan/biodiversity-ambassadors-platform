@@ -248,7 +248,7 @@ export async function rolesView() {
       <div class="grow"></div><button class="btn secondary sm" type="button" data-act="roles-copy" ${rows.length ? '' : raw('disabled')}>${t('roles.copy_emails')}</button>
       <button class="btn secondary sm" type="button" data-act="roles-csv" ${rows.length ? '' : raw('disabled')}>⬇ ${t('roles.export')}</button></div>
     ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('auth.email')}</th><th>${t('profile.university')}</th><th>${t('roles.signed_at')}</th><th></th></tr></thead><tbody>
-      ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b></td><td class="small">${r.email}</td><td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td>
+      ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b>${r.qualified ? '' : html` <span class="chip bad">${t('roles.not_qualified')}</span>`}</td><td class="small">${r.email}</td><td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td>
         <td><button class="btn sm danger" type="button" data-act="roles-remove" data-id="${r.id}">${t('roles.remove')}</button></td></tr>`)}</tbody></table></div>`
       : html`<div class="empty">${t('roles.none')}</div>`}`,
     mount() {
