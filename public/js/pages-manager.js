@@ -18,6 +18,9 @@ const miniProgress = (p) => html`<div class="mini-progress">${['core', 'elective
   const x = p.categories[c];
   return html`<div><span>${t(`cat_short.${c}`)}</span><div class="bar sm ${c}"><i style="width:${(x.earned / x.required) * 100}%"></i></div><span>${x.earned}/${x.required}</span></div>`; })}</div>`;
 
+const webinarChip = (w) => (!w || w.attended ? '' : w.excused ? html`<div><span class="chip info">${t('mgr.webinar')}: ${t('webinar.state_excused')}</span></div>`
+  : html`<div><span class="chip neutral">${t('mgr.webinar')}: ${t('webinar.state_none')}</span></div>`);
+
 // ── Overview ────────────────────────────────────────────────────────────────
 export async function overviewView() {
   const [o, claims] = await Promise.all([api.mgr.overview(), api.mgr.claims('pending')]);
@@ -47,11 +50,11 @@ export async function mgrAmbassadorsView() {
   let list = await api.mgr.ambassadors();
   const unis = [...new Set(list.map((a) => a.university).filter(Boolean))].sort();
   const rows = (items) => (items.length ? html`${items.map((a) => html`<tr>
-      <td><b>${fullName(a) || '—'}</b><div class="small muted">${a.email}</div></td>
+      <td><b>${fullName(a) || '—'}</b>${a.progress.categories.webinar?.priority ? html` <span class="chip credits" title="${t('webinar.priority_chip')}">★ ${t('mgr.priority')}</span>` : ''}<div class="small muted">${a.email}</div></td>
       <td class="small">${a.university ? localUniversity(a.university) : '—'}<div class="muted">${a.faculty || ''}</div></td>
       <td>${miniProgress(a.progress)}</td>
       <td><b>${a.progress.total}</b>/${a.progress.required}</td>
-      <td>${statusChip(a.status)}</td>
+      <td>${statusChip(a.status)}${webinarChip(a.progress.categories.webinar)}</td>
       <td class="small muted">${a.last_seen_at ? fmtDate(a.last_seen_at) : t('mgr.never')}</td>
       <td><div class="row" style="flex-wrap:nowrap;gap:.3rem"><button class="btn secondary sm" type="button" data-act="amb-view" data-id="${a.id}">${t('mgr.view')}</button>
         <button class="btn ghost sm" type="button" data-act="amb-reset" data-id="${a.id}">${t('mgr.reset_pw')}</button>
@@ -63,25 +66,28 @@ export async function mgrAmbassadorsView() {
     <div class="toolbar"><input type="search" id="a-q" placeholder="${t('amb.search')}" aria-label="${t('amb.search')}">
       <select id="a-status" aria-label="${t('mgr.status')}"><option value="">${t('mgr.all_statuses')}</option>${['profile_incomplete', 'started', 'in_progress', 'qualified'].map((s) => html`<option value="${s}">${t(`status.${s}`)}</option>`)}</select>
       <select id="a-uni" aria-label="${t('profile.university')}"><option value="">${t('amb.all_universities')}</option>${unis.map((u) => html`<option value="${u}">${localUniversity(u)}</option>`)}</select>
+      <select id="a-sort" aria-label="${t('mgr.sort_default')}"><option value="">${t('mgr.sort_default')}</option><option value="priority">${t('mgr.sort_priority')}</option></select>
       <span class="muted small" id="a-count"></span></div>
     <div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('profile.university')}</th><th>${t('mgr.progress')}</th><th>${t('mgr.total')}</th><th>${t('mgr.status')}</th><th>${t('mgr.last_active')}</th><th></th></tr></thead>
       <tbody id="a-rows">${rows(list)}</tbody></table></div>`,
     mount(root) {
-      const q = root.querySelector('#a-q'), st = root.querySelector('#a-status'), un = root.querySelector('#a-uni');
+      const q = root.querySelector('#a-q'), st = root.querySelector('#a-status'), un = root.querySelector('#a-uni'), so = root.querySelector('#a-sort');
       let shown = list;
       const apply = () => {
         const s = q.value.toLowerCase().trim();
         shown = list.filter((a) => (!st.value || a.status === st.value) && (!un.value || a.university === un.value)
           && (!s || `${fullName(a)} ${a.email} ${a.faculty || ''} ${a.university || ''}`.toLowerCase().includes(s)));
+        if (so.value === 'priority') shown = [...shown].sort((x, y) => Number(!!y.progress.categories.webinar?.priority) - Number(!!x.progress.categories.webinar?.priority));
         root.querySelector('#a-rows').innerHTML = rows(shown).s;
         root.querySelector('#a-count').textContent = t('amb.count', { n: shown.length });
       };
-      q.addEventListener('input', debounce(apply, 150)); st.addEventListener('change', apply); un.addEventListener('change', apply); apply();
+      q.addEventListener('input', debounce(apply, 150)); st.addEventListener('change', apply); un.addEventListener('change', apply); so.addEventListener('change', apply); apply();
       const byId = (id) => list.find((a) => a.id === id);
       actions['amb-csv'] = () => {
-        const head = ['email', 'first_name', 'last_name', 'university', 'faculty', 'core', 'elective', 'soft', 'total', 'status', 'registered', 'last_active'];
+        const head = ['email', 'first_name', 'last_name', 'university', 'faculty', 'core', 'elective', 'soft', 'total', 'status', 'webinar', 'priority', 'registered', 'last_active'];
         const body = shown.map((a) => [a.email, a.first_name, a.last_name, a.university, a.faculty, a.progress.categories.core.earned, a.progress.categories.elective.earned,
-          a.progress.categories.soft.earned, a.progress.total, a.status, a.created_at, a.last_seen_at].map(csvCell).join(','));
+          a.progress.categories.soft.earned, a.progress.total, a.status, a.progress.categories.webinar?.attended ? 'attended' : a.progress.categories.webinar?.excused ? 'excused' : 'no',
+          a.progress.categories.webinar?.priority ? 'yes' : '', a.created_at, a.last_seen_at].map(csvCell).join(','));
         const blob = new Blob(['﻿' + [head.join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob); const link = document.createElement('a');
         link.href = url; link.download = `ambassadors-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url);
@@ -155,6 +161,78 @@ function resetDialog(a) {
           <button class="btn ghost sm" type="button" data-act="copy-pw">${t('common.copy')}</button></p><p class="small">${t('mgr.temp_password_note')}</p>` : ''}</div>`.s;
       actions['copy-pw'] = () => { navigator.clipboard?.writeText(r.password); toast(t('common.copied')); };
     } catch (e) { formMsg(form, errText(e)); setBusy(btn, false); }
+  };
+}
+
+// ── Webinar (live check-in / check-out, excuses) ────────────────────────────
+export async function webinarView() {
+  let d = await api.mgr.webinar();
+  const ui = { filter: 'all', q: '' };
+  const fmtT = (v) => (v ? fmtDateTime(v) : '—');
+  const stats = () => [
+    [d.rows.filter((r) => r.checked_in_at).length, 'webinar.stat_in'], [d.rows.filter((r) => r.done).length, 'webinar.stat_done'],
+    [d.rows.filter((r) => r.excused).length, 'webinar.stat_excused'], [d.rows.filter((r) => r.priority).length, 'webinar.stat_priority']];
+  const winRow = (key, open, label) => html`<div class="row" style="padding:.6rem 0;border-top:1px solid var(--line)"><b style="min-width:110px">${label}</b>
+    <span class="chip ${open ? 'ok' : 'neutral'}">${open ? t('webinar.open') : t('webinar.closed')}</span><div class="grow"></div>
+    <button class="btn ${open ? 'danger' : ''} sm" type="button" data-act="web-toggle" data-w="${key}">${open ? t('webinar.deactivate') : t('webinar.activate')}</button></div>`;
+  const filtered = () => d.rows.filter((r) => ({ all: true, in: r.checked_in_at && !r.checked_out_at, missing: !r.done && !r.excused })[ui.filter]
+      && (!ui.q || `${fullName(r)} ${r.email}`.toLowerCase().includes(ui.q)))
+    .sort((a, b) => String(b.checked_in_at || '').localeCompare(String(a.checked_in_at || '')) || String(a.email).localeCompare(String(b.email)));
+  const rowsHtml = () => {
+    const items = filtered().slice(0, 500);
+    return items.length ? html`${items.map((r) => html`<tr>
+      <td><b>${fullName(r) || '—'}</b><div class="small muted">${r.email}</div></td>
+      <td class="small">${r.university ? localUniversity(r.university) : '—'}</td>
+      <td class="small">${fmtT(r.checked_in_at)}</td><td class="small">${fmtT(r.checked_out_at)}</td>
+      <td><div class="chips">${r.done ? html`<span class="chip ok">✓ ${t('webinar.state_done')}</span>` : r.checked_out_at ? html`<span class="chip bad">${t('webinar.state_out')}</span>` : r.checked_in_at ? html`<span class="chip pending">${t('webinar.state_in')}</span>` : html`<span class="chip neutral">${t('webinar.state_none')}</span>`}
+        ${r.excused ? html`<span class="chip info">${t('webinar.state_excused')}</span>` : ''}${r.priority ? html`<span class="chip credits">★ ${t('mgr.priority')}</span>` : ''}</div></td>
+      <td>${r.done ? '' : html`<button class="btn ${r.excused ? 'secondary' : 'ghost'} sm" type="button" data-act="web-excuse" data-id="${r.id}" data-ex="${r.excused ? '0' : '1'}">${r.excused ? t('webinar.unexcuse') : t('webinar.excuse')}</button>`}</td></tr>`)}`
+      : html`<tr><td colspan="6" class="center muted" style="padding:2rem">${t('mgr.none')}</td></tr>`;
+  };
+  return {
+    html: html`<div class="main-head"><h1>${t('mgr.webinar')}</h1></div>
+    <p class="muted" style="max-width:760px">${t('webinar.mgr_intro')}</p>
+    <div class="card" style="margin-bottom:1.2rem"><div id="web-win"></div></div>
+    <div class="stat-grid" id="web-stats"></div>
+    <div class="toolbar"><input type="search" id="web-q" placeholder="${t('amb.search')}" aria-label="${t('amb.search')}">
+      <select id="web-filter" aria-label="${t('webinar.col_state')}"><option value="all">${t('webinar.filter_all')}</option><option value="in">${t('webinar.filter_in')}</option><option value="missing">${t('webinar.filter_missing')}</option></select></div>
+    <div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('profile.university')}</th><th>${t('webinar.col_in')}</th><th>${t('webinar.col_out')}</th><th>${t('webinar.col_state')}</th><th></th></tr></thead>
+      <tbody id="web-rows"></tbody></table></div>`,
+    mount(root) {
+      const drawWin = () => { root.querySelector('#web-win').innerHTML = html`<b>${t('webinar.title')}</b>${winRow('checkin', d.checkin_open, t('webinar.checkin_window'))}${winRow('checkout', d.checkout_open, t('webinar.checkout_window'))}`.s; };
+      const drawStats = () => { root.querySelector('#web-stats').innerHTML = html`${stats().map(([n, k]) => html`<div class="stat"><b>${n}</b><span>${t(k)}</span></div>`)}`.s; };
+      const drawRows = () => { root.querySelector('#web-rows').innerHTML = rowsHtml().s; };
+      const drawAll = () => { drawWin(); drawStats(); drawRows(); };
+      drawAll();
+      root.querySelector('#web-q').addEventListener('input', debounce((e) => { ui.q = e.target.value.toLowerCase().trim(); drawRows(); }, 150));
+      root.querySelector('#web-filter').addEventListener('change', (e) => { ui.filter = e.target.value; drawRows(); });
+      actions['web-toggle'] = async (el) => {
+        const which = el.dataset.w;
+        setBusy(el, true, t('common.wait'));
+        try {
+          const r = await api.mgr.setWebinarWindow(which === 'checkin' ? !d.checkin_open : null, which === 'checkout' ? !d.checkout_open : null);
+          d.checkin_open = r.checkin_open; d.checkout_open = r.checkout_open;
+          toast(t('webinar.window_updated'));
+        } catch (e) { toast(errText(e), 'bad'); }
+        drawWin();
+      };
+      actions['web-excuse'] = async (el) => {
+        const excuse = el.dataset.ex === '1';
+        if (excuse && !(await confirmDialog({ title: t('webinar.excuse'), message: t('webinar.excuse_confirm') }))) return;
+        setBusy(el, true, t('common.wait'));
+        try {
+          await api.mgr.excuseWebinar(el.dataset.id, excuse);
+          const row = d.rows.find((r) => r.id === el.dataset.id); if (row) row.excused = excuse;
+          toast(excuse ? t('webinar.excused_ok') : t('webinar.unexcused_ok'));
+        } catch (e) { toast(errText(e), 'bad'); }
+        drawStats(); drawRows();
+      };
+      // Attendees check in and out live, so keep the table current while this page is open.
+      const timer = setInterval(async () => {
+        if (!root.querySelector('#web-rows')) return clearInterval(timer);
+        try { d = await api.mgr.webinar(); drawAll(); } catch { /* keep the last view */ }
+      }, 15000);
+    },
   };
 }
 

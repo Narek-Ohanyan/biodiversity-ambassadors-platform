@@ -19,6 +19,8 @@ export function notifText(n) {
     case 'claim_rejected':
       return { icon: '⚠️', title: t('n.rejected_title'), href: '/app/learning',
         body: [t('n.rejected_body', { activity: activityName(p.activity) }), p.comment].filter(Boolean).join('\n') };
+    case 'webinar_excused':
+      return { icon: 'ℹ️', title: t('n.webinar_excused_title'), body: t('n.webinar_excused_body'), href: '/app/learning' };
     case 'qualified':
       return { icon: '🎉', title: t('n.qualified_title'), body: t('n.qualified_body'), href: '/app/profile' };
     case 'claim_submitted':

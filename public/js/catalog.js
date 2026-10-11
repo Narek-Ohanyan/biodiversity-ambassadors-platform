@@ -32,6 +32,7 @@ export const ACTIVITY_TEXT = {
     url: 'https://www.culturepartnership.eu/am/publishing/digital-communication',
   },
   soft_other: { en: 'Other (equivalent soft skills course)', hy: 'Այլ (համարժեք փափուկ հմտությունների դասընթաց)' },
+  webinar: { en: 'Webinar', hy: 'Վեբինար' },
 };
 
 // Form options. Stored values are the keys; labels are looked up at display time.

@@ -50,7 +50,7 @@ export function ambassadorShell(content, path) {
 
 export function managerShell(content, path) {
   return shell(html`${sideLink('/manager', '📊', t('mgr.overview'), path)}${sideLink('/manager/ambassadors', '👥', t('mgr.ambassadors'), path)}
-    ${sideLink('/manager/claims', '✅', t('mgr.claims'), path, 'claims')}${sideLink('/manager/checkins', '📋', t('mgr.checkins'), path)}
+    ${sideLink('/manager/claims', '✅', t('mgr.claims'), path, 'claims')}${sideLink('/manager/checkins', '📋', t('mgr.checkins'), path)}${sideLink('/manager/webinar', '🎥', t('mgr.webinar'), path)}
     ${sideLink('/manager/messages', '📣', t('mgr.messages'), path)}${sideLink('/manager/inbox', '✉️', t('mgr.inbox'), path, 'inbox')}
     ${sideLink('/manager/notifications', '🔔', t('nav.notifications'), path, 'notifications')}${sideLink('/manager/account', '⚙️', t('mgr.account'), path)}`, content, '/manager');
 }

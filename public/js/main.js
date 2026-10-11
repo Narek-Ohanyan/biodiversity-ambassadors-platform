@@ -28,6 +28,7 @@ const ROUTES = {
   '/manager': { view: mgr.overviewView, title: 'mgr.overview', shell: 'manager', role: 'manager', noindex: true },
   '/manager/ambassadors': { view: mgr.mgrAmbassadorsView, title: 'mgr.ambassadors', shell: 'manager', role: 'manager', noindex: true },
   '/manager/claims': { view: mgr.claimsView, title: 'mgr.claims', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/webinar': { view: mgr.webinarView, title: 'mgr.webinar', shell: 'manager', role: 'manager', noindex: true },
   '/manager/checkins': { view: mgr.checkinsView, title: 'mgr.checkins', shell: 'manager', role: 'manager', noindex: true },
   '/manager/messages': { view: mgr.messagesView, title: 'mgr.messages', shell: 'manager', role: 'manager', noindex: true },
   '/manager/inbox': { view: mgr.inboxView, title: 'mgr.inbox', shell: 'manager', role: 'manager', noindex: true },

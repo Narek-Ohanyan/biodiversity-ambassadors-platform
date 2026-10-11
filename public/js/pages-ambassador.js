@@ -1,6 +1,6 @@
 // Ambassador platform: My Profile, My Learning (credit framework + claim flows), UNICEF modules.
 import { t, getLang } from './i18n.js';
-import { html, raw, esc, actions, forms, openModal, toast, errText, setBusy, wordCount, localName, fmtDate, safeUrl, resizeImage, initials, skillLabel, langLabel, profLabel } from './lib.js';
+import { html, raw, esc, actions, forms, openModal, toast, errText, setBusy, wordCount, localName, fmtDate, fmtDateTime, safeUrl, resizeImage, initials, skillLabel, langLabel, profLabel } from './lib.js';
 import * as api from './api.js';
 import { state, isLocked } from './api.js';
 import { SKILLS, LANGUAGES, PROFICIENCY, UNIVERSITIES } from './catalog.js';
@@ -214,20 +214,49 @@ function activityRow(a, ctx) {
   </div>`;
 }
 
+// The webinar is claimed by checking in and out while the manager has each window open (see webinar_check_in/out).
+function webinarHtml(w, progress) {
+  const a = state.config.activities.find((x) => x.key === 'webinar');
+  const locked = isLocked();
+  const wp = progress.categories.webinar;
+  const L = getLang();
+  const status = w.done ? html`<span class="chip ok">✓ ${w.bonus ? t('webinar.attended_bonus') : t('webinar.attended_elective')}</span>`
+    : w.excused ? html`<span class="chip info">${t('webinar.excused_note')}</span>`
+    : w.checked_in_at ? html`<span class="chip pending">${t('webinar.checked_in_at', { time: fmtDateTime(w.checked_in_at) })}</span>`
+    : html`<span class="chip neutral">${t('webinar.not_attended')}</span>`;
+  const canIn = !locked && w.checkin_open && !w.checked_in_at;
+  const canOut = !locked && w.checkout_open && w.checked_in_at && !w.checked_out_at;
+  const hint = w.done ? '' : !w.checked_in_at ? (w.checkin_open ? '' : t('webinar.checkin_closed_note'))
+    : (!w.checked_out_at && !w.checkout_open ? t('webinar.checkout_closed_note') : '');
+  return html`<section class="cat-block ${wp.complete ? 'closed' : ''}"><div class="cat-head"><span class="dot" style="background:var(--elective)"></span>
+      <h2>${t('cat.webinar')}</h2><span class="chip pending">${t('webinar.mandatory')}</span>
+      ${wp.complete ? html`<span class="chip ok">✓ ${t('learn.cat_complete')}</span>` : ''}${wp.priority ? html`<span class="chip credits">★ ${t('webinar.priority_chip')}</span>` : ''}</div>
+    <div class="activity">
+      <div><h3>${a[L]}</h3>
+        <div class="meta"><span class="chip credits">${a.credits} ${t('learn.credits')}</span>${status}</div>
+        <p class="muted small" style="margin:.5rem 0 0">${t('webinar.rule')}</p></div>
+      <div class="actions"><div class="row" style="flex-wrap:nowrap">
+        ${w.done ? '' : html`<button class="btn" type="button" data-act="webinar-in" ${canIn ? '' : raw('disabled')}>${t('webinar.check_in')}</button>
+        <button class="btn" type="button" data-act="webinar-out" ${canOut ? '' : raw('disabled')}>${t('webinar.check_out')}</button>`}</div></div>
+      ${hint ? html`<div class="sub"><span class="muted small">${hint}</span></div>` : ''}
+    </div></section>`;
+}
+
 export async function learningView() {
   await api.refreshMe();
   const cfg = state.config;
-  const [claims, unicefStatus] = await Promise.all([api.myClaims(), api.myUnicefStatus()]);
+  const [claims, unicefStatus, webinar] = await Promise.all([api.myClaims(), api.myUnicefStatus(), api.myWebinarStatus()]);
   const progress = state.progress;
   const locked = isLocked();
   const ctx = { claims, progress, locked, unicefDone: unicefStatus.filter((m) => m.completed).length, unicefTotal: unicefStatus.length };
-  const pct = Math.round((progress.total / progress.required) * 100);
+  const pct = Math.min(100, Math.round((progress.total / progress.required) * 100));
   const cats = ['core', 'elective', 'soft'];
   return {
     html: html`<div class="main-head"><h1>${t('nav.learning')}</h1></div>
     ${locked ? html`<div class="banner bad"><span>🔒</span><div>${t('learn.closed_banner')}</div></div>`
       : html`<div class="banner"><span>⏰</span><div>${t('learn.deadline_banner', { date: fmtDate(`${cfg.displayDeadline}T12:00:00+04:00`, { dateStyle: 'long' }) })}</div></div>`}
     ${progress.qualified ? html`<div class="banner ok"><span>🎉</span><div><b>${t('learn.qualified')}</b> ${t('learn.qualified_text')}</div></div>` : ''}
+    ${!progress.qualified && progress.base_total >= progress.required && !progress.categories.webinar.complete ? html`<div class="banner"><span>🎥</span><div>${t('webinar.banner_missing')}</div></div>` : ''}
     <div class="card overall">
       <div class="ring" style="--p:${pct}" role="img" aria-label="${progress.total}/${progress.required}"><div><div><b>${progress.total}</b><br><span>/ ${progress.required}</span></div></div></div>
       <div><h2 style="font-size:1.3rem;margin-bottom:.3rem">${t('learn.requirements')}</h2><p class="muted small">${t('learn.requirements_text')}</p>
@@ -238,7 +267,24 @@ export async function learningView() {
       return html`<section class="cat-block ${p.complete ? 'closed' : ''}"><div class="cat-head"><span class="dot" style="background:var(--${c})"></span>
         <h2>${t(`cat.${c}`)} — ${p.required} ${t('learn.credits')}</h2>
         ${p.complete ? html`<span class="chip ok">✓ ${t('learn.cat_complete')}</span>` : p.full ? html`<span class="chip pending">${t('learn.cat_full_short')}</span>` : ''}</div>
-        ${cfg.activities.filter((a) => a.category === c).map((a) => activityRow(a, ctx))}</section>`; })}`,
+        ${cfg.activities.filter((a) => a.category === c).map((a) => activityRow(a, ctx))}</section>`; })}
+    <div id="webinar-slot">${webinarHtml(webinar, progress)}</div>`,
+    mount(root) {
+      const slot = () => root.querySelector('#webinar-slot');
+      const draw = (w) => { const el = slot(); if (el) el.innerHTML = webinarHtml(w, state.progress).s; };
+      const refresh = async () => { try { draw(await api.myWebinarStatus()); } catch { /* keep showing the last state */ } };
+      actions['webinar-in'] = async (el) => {
+        setBusy(el, true, t('common.wait'));
+        try { draw(await api.webinarCheckIn()); toast(t('webinar.checked_in_ok')); } catch (e) { toast(errText(e), 'bad'); await refresh(); }
+      };
+      actions['webinar-out'] = async (el) => {
+        setBusy(el, true, t('common.wait'));
+        try { await api.webinarCheckOut(); toast(t('webinar.checked_out_ok')); navigate(location.pathname); }
+        catch (e) { toast(errText(e), 'bad'); await refresh(); }
+      };
+      // The manager opens/closes each window live during the event, so keep the buttons current.
+      const timer = setInterval(() => { if (!slot()) clearInterval(timer); else refresh(); }, 10000);
+    },
   };
 }
 

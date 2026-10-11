@@ -102,6 +102,11 @@ export const submitQuiz = (module, answers) => sb.rpc('submit_quiz', { p_module:
 // table grant can't be column-restricted after the fact (see the migration for why).
 export const unicefQuizQuestions = (module) => sb.rpc('unicef_quiz_questions_for', { p_module: module }).then(unwrap);
 
+// Webinar: attendance is claimed only by checking in and out while the manager has each window open.
+export const myWebinarStatus = () => sb.rpc('my_webinar_status').then(unwrap);
+export const webinarCheckIn = () => sb.rpc('webinar_check_in').then(unwrap);
+export const webinarCheckOut = () => sb.rpc('webinar_check_out').then(unwrap);
+
 export async function uploadCertificates(files) {
   const uid = state.user.id;
   const out = [];
@@ -177,6 +182,9 @@ export const mgr = {
     }
     return data;
   },
+  webinar: () => sb.rpc('manager_webinar').then(unwrap),
+  setWebinarWindow: (checkin, checkout) => sb.rpc('set_webinar_window', { p_checkin: checkin, p_checkout: checkout }).then(unwrap),
+  excuseWebinar: (userId, excused) => sb.rpc('excuse_webinar', { p_user: userId, p_excused: excused }).then(unwrap),
   audienceCount: (aud) => sb.rpc('audience_count', { p_audience: aud }).then(unwrap),
   announce: (m) => sb.rpc('send_announcement', {
     p_title_en: m.title_en, p_title_hy: m.title_hy, p_body_en: m.body_en, p_body_hy: m.body_hy, p_audience: m.audience,
