@@ -20,6 +20,15 @@ export const wordCount = (s) => (String(s || '').trim() ? String(s).trim().split
 export const debounce = (fn, ms = 250) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), ms); }; };
 export const initials = (a, b) => `${(a || '').trim()[0] || ''}${(b || '').trim()[0] || ''}`.toUpperCase() || '·';
 export const localName = (o) => o?.[getLang()] || o?.en || o?.hy || '';
+// Ambassadors type their name and bio in whichever script they like; profiles carry Armenian and English
+// versions (first_name_hy …, filled by translate-profile) so the language button applies to people too.
+// Missing translations fall back to the text as typed.
+export const personFirst = (p) => p?.[`first_name_${getLang()}`] || p?.first_name || '';
+export const personLast = (p) => p?.[`last_name_${getLang()}`] || p?.last_name || '';
+export const personName = (p) => `${personFirst(p)} ${personLast(p)}`.trim();
+export const personBio = (p) => p?.[`bio_${getLang()}`] || p?.bio || '';
+// Everything a name search should match, in both languages and as typed.
+export const personSearchText = (p) => [p.first_name, p.last_name, p.first_name_hy, p.last_name_hy, p.first_name_en, p.last_name_en].filter(Boolean).join(' ');
 
 const HY_MONTHS = ['հունվարի', 'փետրվարի', 'մարտի', 'ապրիլի', 'մայիսի', 'հունիսի', 'հուլիսի', 'օգոստոսի', 'սեպտեմբերի', 'հոկտեմբերի', 'նոյեմբերի', 'դեկտեմբերի'];
 // Armenian dates are formatted by hand: browsers often ship without Armenian locale data.

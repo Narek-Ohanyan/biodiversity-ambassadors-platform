@@ -89,6 +89,9 @@ export async function saveProfile(values, photoBlob) {
   const row = { user_id: uid, ...values, photo_path, ...(photoBlob ? { photo_pos_x: null, photo_pos_y: null } : {}) };
   unwrap(await sb.from('profiles').upsert(row, { onConflict: 'user_id' }));
   await refreshMe();
+  // Editing the name or bio clears its Armenian/English versions; ask for fresh ones in the background.
+  // Idempotent and best-effort: until it lands, the site simply shows the text as typed.
+  sb.functions.invoke('translate-profile', { body: {} }).catch(() => {});
 }
 
 export const myClaims = () => sb.from('claims').select('*, claim_files(id)').eq('user_id', state.user.id).order('created_at', { ascending: false }).then(unwrap);
