@@ -247,8 +247,8 @@ export async function rolesView() {
     <div class="row" style="margin:1rem 0 .8rem"><h2 style="margin:0;font-size:1.4rem">${t('roles.rapporteur')}</h2><span class="chip ok">${t('roles.mgr_count', { n: rows.length })}</span>
       <div class="grow"></div><button class="btn secondary sm" type="button" data-act="roles-copy" ${rows.length ? '' : raw('disabled')}>${t('roles.copy_emails')}</button>
       <button class="btn secondary sm" type="button" data-act="roles-csv" ${rows.length ? '' : raw('disabled')}>⬇ ${t('roles.export')}</button></div>
-    ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('auth.email')}</th><th>${t('profile.university')}</th><th>${t('roles.signed_at')}</th><th></th></tr></thead><tbody>
-      ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b>${r.qualified ? '' : html` <span class="chip bad">${t('roles.not_qualified')}</span>`}</td><td class="small">${r.email}</td><td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td>
+    ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('auth.email')}</th><th>${t('profile.university')}</th><th>${t('roles.signed_at')}</th><th>${t('roles.recording_done')}</th><th></th></tr></thead><tbody>
+      ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b>${r.qualified ? '' : html` <span class="chip bad">${t('roles.not_qualified')}</span>`}</td><td class="small">${r.email}</td><td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td><td>${r.watched ? html`<span class="chip ok" title="${fmtDateTime(r.watched_at)}">✓ ${t('roles.watched')}</span>` : html`<span class="chip neutral">${t('roles.not_watched')}</span>`}</td>
         <td><button class="btn sm danger" type="button" data-act="roles-remove" data-id="${r.id}">${t('roles.remove')}</button></td></tr>`)}</tbody></table></div>`
       : html`<div class="empty">${t('roles.none')}</div>`}`,
     mount() {
@@ -263,8 +263,8 @@ export async function rolesView() {
         try { await navigator.clipboard.writeText(emails()); toast(t('roles.copied')); } catch (e) { toast(errText(e), 'bad'); }
       };
       actions['roles-csv'] = () => {
-        const body = rows.map((r) => [r.email, r.first_name, r.last_name, r.university, r.faculty, r.created_at].map(csvCell).join(','));
-        const blob = new Blob(['﻿' + [['email', 'first_name', 'last_name', 'university', 'faculty', 'signed_up'].join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
+        const body = rows.map((r) => [r.email, r.first_name, r.last_name, r.university, r.faculty, r.created_at, r.watched ? 'yes' : 'no'].map(csvCell).join(','));
+        const blob = new Blob(['﻿' + [['email', 'first_name', 'last_name', 'university', 'faculty', 'signed_up', 'watched_recording'].join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob); const link = document.createElement('a');
         link.href = url; link.download = `rapporteurs-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url);
       };

@@ -336,16 +336,23 @@ function rapporteurCard(r) {
   const canSignUp = r.open && r.eligible;
   const status = r.signed_up ? html`<span class="chip ok">✓ ${t('roles.signed_up')}</span>` : !r.eligible ? html`<span class="chip neutral">🔒 ${t('roles.qualified_only')}</span>`
     : !r.open ? html`<span class="chip bad">${t('roles.closed')}</span>` : '';
-  const action = r.signed_up
-    ? html`<a class="btn" href="${safeUrl(r.zoom_url)}" target="_blank" rel="noopener noreferrer">${t('roles.join_zoom')} ↗</a>`
+  const needsRecording = r.signed_up && !r.recording_watched;
+  const action = r.signed_up ? ''
     : html`<button class="btn" type="button" data-act="role-signup" data-role="rapporteur" ${canSignUp ? '' : raw('disabled')}>${t('roles.become_rapporteur')}</button>`;
   const note = r.signed_up ? t('roles.signed_note') : !r.eligible ? t('roles.not_eligible_note') : r.open ? t('roles.signup_note') : t('roles.closed_note');
+  // Signed-up ambassadors must watch the recording: it has to be opened from here before it can be confirmed.
+  const recording = !r.signed_up || !r.recording_url ? '' : html`<div class="activity" style="margin:1rem 0">
+      <div><h3>${t('roles.recording_title')}</h3>
+        <div class="meta">${r.recording_watched ? html`<span class="chip ok">✓ ${t('roles.recording_done')}</span>` : html`<span class="chip pending">${t('roles.recording_pending')}</span>`}</div>
+        ${needsRecording ? html`<p class="muted small" style="margin:.4rem 0 0">${t('roles.recording_hint')}</p>` : ''}</div>
+      <div class="row"><a class="btn ${needsRecording && !r.recording_opened ? '' : 'secondary'}" data-rec-open data-role="rapporteur" href="${safeUrl(r.recording_url)}" target="_blank" rel="noopener noreferrer">${t('roles.recording_watch')} ↗</a>
+        ${needsRecording ? html`<button class="btn" type="button" data-act="role-rec-confirm" data-role="rapporteur" ${r.recording_opened ? '' : raw('disabled')}>${t('roles.recording_confirm')}</button>` : ''}</div></div>`;
   return html`<div class="card"><div class="row" style="align-items:center;gap:.6rem"><h2 style="margin:0;font-size:1.4rem">${t('roles.rapporteur')}</h2>
       <span class="chip pending">${t('roles.volunteer')}</span>${status}</div>
     <p class="muted small" style="margin:.4rem 0 0">${c[L].event}</p>
     <p style="margin:.8rem 0">${c[L].summary}</p>
-    <div class="chips" style="margin-bottom:1rem"><span class="chip info">🎥 ${t('roles.meeting', { when: yerevanWhen(r.meeting_at) })}</span>
-      <span class="chip ${r.open ? 'credits' : 'neutral'}">⏰ ${t('roles.deadline', { when: yerevanWhen(r.deadline) })}</span></div>
+    ${r.deadline ? html`<div class="chips" style="margin-bottom:1rem"><span class="chip ${r.open ? 'credits' : 'neutral'}">⏰ ${t('roles.deadline', { when: yerevanWhen(r.deadline) })}</span></div>` : ''}
+    ${recording}
     <div class="row">${action}<a class="btn secondary" href="${safeUrl(c.templateUrl)}" target="_blank" rel="noopener noreferrer">${t('roles.template')} ↗</a>
       ${r.signed_up ? html`<button class="btn ghost" type="button" data-act="role-cancel" data-role="rapporteur">${t('roles.cancel')}</button>` : ''}</div>
     <p class="muted small" style="margin:.8rem 0 0">${note}</p></div>`;
@@ -365,6 +372,16 @@ export async function rolesView() {
       actions['role-signup'] = async (el) => {
         setBusy(el, true, t('common.wait'));
         try { roles = await api.signupRole(el.dataset.role); toast(t('roles.signed_ok')); redraw(); }
+        catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
+      };
+      // Opening the recording is recorded (the confirm button needs it); the link itself opens normally in a new tab.
+      root.querySelector('#role-slot').addEventListener('click', async (e) => {
+        const link = e.target.closest('[data-rec-open]'); if (!link) return;
+        try { roles = await api.roleOpenRecording(link.dataset.role); redraw(); } catch { /* the link still opens */ }
+      });
+      actions['role-rec-confirm'] = async (el) => {
+        setBusy(el, true, t('common.wait'));
+        try { roles = await api.roleConfirmRecording(el.dataset.role); toast(t('roles.watched_ok')); redraw(); }
         catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
       };
       actions['role-cancel'] = async (el) => {
