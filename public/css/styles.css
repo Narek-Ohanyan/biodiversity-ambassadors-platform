@@ -256,3 +256,10 @@ th { background: var(--forest-50); font-size: .76rem; text-transform: uppercase;
 /* role pages (instructions for volunteer roles) */
 .role-guide ul { margin: 0 0 1rem 1.2rem; padding: 0; } .role-guide li { margin-bottom: .35rem; } .role-guide p { margin: 0 0 .8rem; } .role-guide .card > :last-child { margin-bottom: 0; }
 .role-guide ul.role-quotes { list-style: none; margin-left: 0; } .role-guide ul.role-quotes li { font-style: italic; color: var(--muted); padding-left: .8rem; border-left: 3px solid var(--line); }
+
+/* Manager QR codes page: one card per ambassador with a scannable preview */
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: .9rem; margin-top: 1rem; }
+.qr-card { display: flex; gap: 1rem; align-items: flex-start; }
+.qr-card .qr-img { flex: none; width: 120px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff; }
+.qr-card .qr-img svg { display: block; width: 100%; height: auto; }
+.qr-card .qr-meta { min-width: 0; }

@@ -7,6 +7,7 @@ import { UNIVERSITIES } from './catalog.js';
 import { navigate } from './router.js';
 import { formMsg, ambassadorBody, localUniversity } from './pages-public.js';
 import { updateBadges } from './pages-common.js';
+import { ambUrl, ambCode, qrSvg, qrPng, makeZip, download, qrFileStem } from './qr.js';
 
 const L = () => getLang();
 const fullName = (a) => `${a.first_name || ''} ${a.last_name || ''}`.trim();
@@ -232,6 +233,61 @@ export async function webinarView() {
         if (!root.querySelector('#web-rows')) return clearInterval(timer);
         try { d = await api.mgr.webinar(); drawAll(); } catch { /* keep the last view */ }
       }, 15000);
+    },
+  };
+}
+
+// ── QR codes (one per ambassador, printed on nametags) ──────────────────────
+export async function qrView() {
+  const all = (await api.mgr.ambassadors()).filter((a) => a.completed && a.first_name && a.last_name)
+    .sort((x, y) => `${x.last_name_en || x.last_name} ${x.first_name_en || x.first_name}`.localeCompare(`${y.last_name_en || y.last_name} ${y.first_name_en || y.first_name}`));
+  const card = (a) => html`<div class="card flat qr-card"><div class="qr-img">${raw(qrSvg(ambUrl(a.id)))}</div>
+    <div class="qr-meta"><b>${fullName(a)}</b><div class="small muted">${a.university ? localUniversity(a.university) : ''}</div>
+      <div class="small">${a.published_at ? html`<span class="chip ok">${t('qr.live')}</span>` : html`<span class="chip neutral">${t('qr.not_live')}</span>`}</div>
+      <div class="row" style="margin-top:.5rem;gap:.4rem"><button class="btn secondary sm" type="button" data-act="qr-png" data-id="${a.id}">PNG</button><button class="btn secondary sm" type="button" data-act="qr-svg" data-id="${a.id}">SVG</button>
+        <a class="btn ghost sm" href="${ambUrl(a.id)}" target="_blank" rel="noopener noreferrer">${t('qr.open')} ↗</a></div></div></div>`;
+  return {
+    html: html`<div class="main-head"><h1>${t('mgr.qr')}</h1></div>
+    <p class="muted" style="max-width:760px">${t('qr.intro')}</p>
+    <div class="row" style="margin:1rem 0"><button class="btn" type="button" data-act="qr-all-png">⬇ ${t('qr.all_png')}</button><button class="btn secondary" type="button" data-act="qr-all-svg">⬇ ${t('qr.all_svg')}</button>
+      <button class="btn secondary" type="button" data-act="qr-csv">⬇ ${t('qr.csv')}</button></div>
+    <div class="toolbar"><input type="search" id="qr-q" placeholder="${t('amb.search')}" aria-label="${t('amb.search')}">
+      <label class="check"><input type="checkbox" id="qr-live"> <span>${t('qr.live_only')}</span></label><span class="muted small" id="qr-count"></span></div>
+    <div class="qr-grid" id="qr-grid"></div>`,
+    mount(root) {
+      const q = root.querySelector('#qr-q'), live = root.querySelector('#qr-live');
+      let shown = all;
+      const apply = () => {
+        const s = q.value.toLowerCase().trim();
+        shown = all.filter((a) => (!live.checked || a.published_at)
+          && (!s || `${fullName(a)} ${a.first_name_en || ''} ${a.last_name_en || ''} ${a.email} ${a.university || ''}`.toLowerCase().includes(s)));
+        root.querySelector('#qr-grid').innerHTML = shown.map((a) => card(a).s).join('');
+        root.querySelector('#qr-count').textContent = t('amb.count', { n: shown.length });
+      };
+      q.addEventListener('input', debounce(apply, 150)); live.addEventListener('change', apply); apply();
+      const byId = (id) => all.find((a) => a.id === id);
+      actions['qr-png'] = async (el) => { const a = byId(el.dataset.id); download(await qrPng(ambUrl(a.id)), `${qrFileStem(a)}.png`); };
+      actions['qr-svg'] = (el) => { const a = byId(el.dataset.id); download(new Blob([qrSvg(ambUrl(a.id))], { type: 'image/svg+xml' }), `${qrFileStem(a)}.svg`); };
+      const zipAll = async (el, kind) => {
+        setBusy(el, true, t('common.wait'));
+        try {
+          const files = [];
+          for (const a of shown) {
+            const url = ambUrl(a.id);
+            const data = kind === 'png' ? new Uint8Array(await (await qrPng(url)).arrayBuffer()) : new TextEncoder().encode(qrSvg(url));
+            files.push({ name: `${qrFileStem(a)}.${kind}`, data });
+          }
+          download(makeZip(files), `ambassador-qr-codes-${kind}-${new Date().toISOString().slice(0, 10)}.zip`);
+        } catch (e) { toast(errText(e), 'bad'); }
+        setBusy(el, false);
+      };
+      actions['qr-all-png'] = (el) => zipAll(el, 'png');
+      actions['qr-all-svg'] = (el) => zipAll(el, 'svg');
+      actions['qr-csv'] = () => {
+        const head = ['first_name', 'last_name', 'first_name_en', 'last_name_en', 'university', 'faculty', 'page_live', 'code', 'url'];
+        const body = shown.map((a) => [a.first_name, a.last_name, a.first_name_en, a.last_name_en, a.university, a.faculty, a.published_at ? 'yes' : 'no', ambCode(a.id), ambUrl(a.id)].map(csvCell).join(','));
+        download(new Blob(['\ufeff' + [head.join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' }), `ambassador-qr-links-${new Date().toISOString().slice(0, 10)}.csv`);
+      };
     },
   };
 }

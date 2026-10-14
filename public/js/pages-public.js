@@ -295,6 +295,18 @@ export async function ambassadorsView() {
   };
 }
 
+// One ambassador's own page, opened by the QR code on their nametag (/ambassadors/<code>).
+// Only published ambassadors are public, so anyone else gets a friendly "not available" message.
+export async function ambassadorPageView(code) {
+  let list = [];
+  try { list = await api.publicAmbassadors(); } catch { /* shown as not available */ }
+  const a = list.find((x) => String(x.id).replace(/-/g, '').toLowerCase().startsWith(code));
+  const head = html`<div class="page-title"><div class="container"><p class="eyebrow">${t('amb.eyebrow')}</p><h1>${t('nav.ambassadors')}</h1></div></div>`;
+  const back = html`<p style="margin-top:1.2rem"><a class="btn secondary" href="/ambassadors" data-link>← ${t('nav.ambassadors')}</a></p>`;
+  if (!a) return { html: html`${head}<section class="section"><div class="container" style="max-width:820px"><div class="empty"><p>${t('amb.page_missing')}</p></div>${back}</div></section>` };
+  return { title: personName(a), html: html`${head}<section class="section"><div class="container" style="max-width:820px"><div class="card">${ambassadorBody(a)}</div>${back}</div></section>` };
+}
+
 // ── Contact ─────────────────────────────────────────────────────────────────
 export function contactView() {
   return {

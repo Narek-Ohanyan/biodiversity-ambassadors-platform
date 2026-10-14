@@ -30,6 +30,7 @@ const ROUTES = {
   '/manager/ambassadors': { view: mgr.mgrAmbassadorsView, title: 'mgr.ambassadors', shell: 'manager', role: 'manager', noindex: true },
   '/manager/claims': { view: mgr.claimsView, title: 'mgr.claims', shell: 'manager', role: 'manager', noindex: true },
   '/manager/roles': { view: mgr.rolesView, title: 'mgr.roles', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/qr': { view: mgr.qrView, title: 'mgr.qr', shell: 'manager', role: 'manager', noindex: true },
   '/manager/webinar': { view: mgr.webinarView, title: 'mgr.webinar', shell: 'manager', role: 'manager', noindex: true },
   '/manager/checkins': { view: mgr.checkinsView, title: 'mgr.checkins', shell: 'manager', role: 'manager', noindex: true },
   '/manager/messages': { view: mgr.messagesView, title: 'mgr.messages', shell: 'manager', role: 'manager', noindex: true },
@@ -62,7 +63,9 @@ async function route() {
   const token = ++renderToken;
   let path = location.pathname.replace(/\/+$/, '') || '/';
   if (path === '/app') path = state.profile?.completed ? '/app/learning' : '/app/profile';
-  let def = ROUTES[path];
+  // /ambassadors/<code>: one ambassador's own page (the target of the QR codes printed on nametags)
+  const ambPage = path.match(/^\/ambassadors\/([0-9a-f]{10})$/i);
+  let def = ambPage ? { view: () => pub.ambassadorPageView(ambPage[1].toLowerCase()), title: 'nav.ambassadors', shell: 'public', noindex: true } : ROUTES[path];
   if (!def) { def = { view: () => ({ html: html`<div class="container section center"><h1>404</h1><p class="muted">${t('common.not_found')}</p><a class="btn" href="/" data-link>${t('nav.home')}</a></div>` }), title: 'nav.home', shell: 'public' }; }
 
   // access control (the database enforces the same rules; this only decides what to show)
@@ -81,6 +84,7 @@ async function route() {
   try { view = await def.view(); }
   catch (e) { console.error(e); view = { html: html`<div class="container section"><div class="form-error">${t('err.generic')}: ${e.message}</div></div>` }; }
   if (token !== renderToken) return; // a newer navigation superseded this one
+  if (view.title) document.title = `${view.title} · ${BRAND_NAME}`;
 
   const shells = { public: publicShell, ambassador: ambassadorShell, manager: managerShell };
   app.innerHTML = shells[def.shell](view.html, path).s;
