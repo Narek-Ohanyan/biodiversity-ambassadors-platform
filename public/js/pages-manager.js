@@ -10,6 +10,7 @@ import { updateBadges } from './pages-common.js';
 import { ambUrl, ambCode, qrSvg, qrPng, makeZip, download, qrFileStem } from './qr.js';
 import { TEAM_ORDER, EVENT_DAYS, HOURS, FIRST_HOUR, LAST_HOUR, dayParts, hourLabel, teamName, teamColor } from './teams.js';
 import { calGrid, slotKey, workloadHtml, heat } from './calendar.js';
+import { downloadLetter } from './letters.js';
 
 const L = () => getLang();
 const fullName = (a) => `${a.first_name || ''} ${a.last_name || ''}`.trim();
@@ -235,6 +236,57 @@ export async function webinarView() {
         if (!root.querySelector('#web-rows')) return clearInterval(timer);
         try { d = await api.mgr.webinar(); drawAll(); } catch { /* keep the last view */ }
       }, 15000);
+    },
+  };
+}
+
+// ── Letters of standing: the register of issued letters ─────────────────────
+export async function lettersView() {
+  let d = await api.mgr.letters();
+  const num = (r) => `AUCB-BA${String(r.serial).padStart(3, '0')}`;
+  const rowHtml = (r) => html`<tr class="${r.voided_at ? 'muted' : ''}"><td><b>${num(r)}</b></td>
+    <td><b>${fullName(r) || '—'}</b><div class="small muted">${r.email}</div><div class="small">${r.first_name_hy ? `${r.first_name_hy} ${r.patronymic_hy} ${r.last_name_hy}` : `${r.first_name_en} ${r.last_name_en}`}</div></td>
+    <td>${t(`let.lang_${r.lang}`)}</td><td class="small">${r.passport_number}<div class="muted">${fmtDate(r.passport_issued_on)} · ${r.passport_issued_by}</div></td>
+    <td class="small">${fmtDateTime(r.created_at)}</td><td>${r.voided_at ? html`<span class="chip bad">${t('let.voided')}</span>` : html`<span class="chip ok">✓ ${t('let.issued')}</span>`}</td>
+    <td>${r.voided_at ? '' : html`<div class="row" style="gap:.3rem">${(r.lang === 'both' ? ['hy', 'en', 'both'] : [r.lang]).map((w) => html`<button class="btn secondary sm" type="button" data-act="mlet-dl" data-id="${r.id}" data-which="${w}">⬇ ${t(`let.dl_${w}`)}</button>`)}
+      <button class="btn ghost sm danger" type="button" data-act="mlet-void" data-id="${r.id}">${t('let.void')}</button></div>`}</td></tr>`;
+  const table = () => (d.rows.length
+    ? html`<div class="table-wrap"><table><thead><tr><th>${t('let.col_number')}</th><th>${t('mgr.ambassador')}</th><th>${t('let.col_lang')}</th><th>${t('let.col_passport')}</th><th>${t('let.col_date')}</th><th>${t('let.col_status')}</th><th></th></tr></thead><tbody>${d.rows.map(rowHtml)}</tbody></table></div>`
+    : html`<div class="empty">${t('let.none_mgr')}</div>`);
+  return {
+    html: html`<div class="main-head"><h1>${t('mgr.letters')}</h1><div class="grow"></div><button class="btn secondary" type="button" data-act="mlet-csv" ${d.rows.length ? '' : raw('disabled')}>⬇ ${t('mgr.export')}</button></div>
+      <p class="muted" style="max-width:760px">${t('mgr.let_intro')}</p>
+      <div class="card flat" style="margin:1rem 0"><div class="row"><b>${t('mgr.let_next')}: <span id="mlet-next">${d.next}</span></b><div class="grow"></div>
+        <input type="number" id="mlet-next-in" min="${d.min}" max="99999" placeholder="${d.next}" style="width:7rem" aria-label="${t('mgr.let_next')}"><button class="btn secondary sm" type="button" data-act="mlet-set-next">${t('mgr.let_next_set')}</button></div>
+        <p class="muted small" style="margin:.5rem 0 0">${t('mgr.let_next_hint')}</p></div>
+      <div id="mlet-table">${table()}</div>`,
+    mount(root) {
+      const redraw = () => { root.querySelector('#mlet-table').innerHTML = table().s; root.querySelector('#mlet-next').textContent = d.next; root.querySelector('#mlet-next-in').min = d.min; };
+      const reload = async () => { d = await api.mgr.letters(); redraw(); };
+      actions['mlet-dl'] = async (el) => {
+        const rec = d.rows.find((x) => String(x.id) === el.dataset.id); setBusy(el, true, t('common.wait'));
+        try { await downloadLetter(rec, el.dataset.which); } catch (e) { toast(errText(e), 'bad'); }
+        setBusy(el, false);
+      };
+      actions['mlet-void'] = async (el) => {
+        const rec = d.rows.find((x) => String(x.id) === el.dataset.id);
+        if (!(await confirmDialog({ title: t('let.void'), message: t('let.void_confirm', { num: num(rec) }), danger: true, confirmText: t('let.void') }))) return;
+        setBusy(el, true, t('common.wait'));
+        try { await api.voidLetter(rec.id); toast(t('let.void_done')); await reload(); } catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
+      };
+      actions['mlet-set-next'] = async (el) => {
+        const n = Number(root.querySelector('#mlet-next-in').value);
+        if (!Number.isInteger(n) || n < d.min) return toast(t('err.invalid_number'), 'bad');
+        setBusy(el, true, t('common.wait'));
+        try { await api.mgr.setLetterNext(n); toast(t('mgr.let_next_done')); await reload(); root.querySelector('#mlet-next-in').value = ''; } catch (e) { toast(errText(e), 'bad'); }
+        setBusy(el, false);
+      };
+      actions['mlet-csv'] = () => {
+        const head = ['number', 'language', 'status', 'email', 'first_name', 'last_name', 'name_hy', 'name_en', 'passport_number', 'passport_issued_on', 'passport_issued_by', 'passport_issued_by_en', 'issued_at', 'voided_at'];
+        const body = d.rows.map((r) => [num(r), r.lang, r.voided_at ? 'voided' : 'issued', r.email, r.first_name, r.last_name, r.first_name_hy ? `${r.first_name_hy} ${r.patronymic_hy} ${r.last_name_hy}` : '', r.first_name_en ? `${r.first_name_en} ${r.last_name_en}` : '',
+          r.passport_number, r.passport_issued_on, r.passport_issued_by, r.passport_issued_by_en, r.created_at, r.voided_at].map(csvCell).join(','));
+        download(new Blob(['﻿' + [head.join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' }), `letters-register-${new Date().toISOString().slice(0, 10)}.csv`);
+      };
     },
   };
 }

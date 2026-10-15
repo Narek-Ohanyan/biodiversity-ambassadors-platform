@@ -117,6 +117,9 @@ export const webinarConfirmRecording = () => sb.rpc('webinar_confirm_recording')
 export const myRoles = () => sb.rpc('my_roles').then(unwrap);
 export const signupRole = (role) => sb.rpc('signup_role', { p_role: role }).then(unwrap);
 export const cancelRole = (role) => sb.rpc('cancel_role', { p_role: role }).then(unwrap);
+export const myLetters = () => sb.rpc('my_letters').then(unwrap);
+export const requestLetter = (p) => sb.rpc('request_letter', { p }).then(unwrap);
+export const voidLetter = (id) => sb.rpc('void_letter', { p_id: id }).then(unwrap);
 export const myBlueZone = () => sb.rpc('my_blue_zone').then(unwrap);
 export const answerBlueZone = (hasAccess) => sb.rpc('answer_blue_zone', { p_has_access: hasAccess }).then(unwrap);
 export const myShifts = () => sb.rpc('my_shifts').then(unwrap);
@@ -203,6 +206,8 @@ export const mgr = {
   roleSignups: (role) => sb.rpc('manager_role_signups', { p_role: role }).then(unwrap),
   roles: () => sb.rpc('manager_roles').then(unwrap),
   blueZone: () => sb.rpc('manager_blue_zone').then(unwrap),
+  letters: () => sb.rpc('manager_letters').then(unwrap),
+  setLetterNext: (n) => sb.rpc('manager_set_letter_next', { p_next: n }).then(unwrap),
   decideRole: (userId, role, status) => sb.rpc('decide_role_signup', { p_user: userId, p_role: role, p_status: status }).then(unwrap),
   shifts: () => sb.rpc('manager_shifts').then(unwrap),
   webinar: () => sb.rpc('manager_webinar').then(unwrap),

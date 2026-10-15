@@ -9,6 +9,7 @@ import { MEDIA_BASE } from './config.js';
 import { CONTENT } from './content.js';
 import { formMsg, localUniversity } from './pages-public.js';
 import { askBlueZone } from './pages-common.js';
+import { downloadLetter } from './letters.js';
 import { TEAMS, TEAM_ORDER, EVENT_DAYS, HOURS, FIRST_HOUR, LAST_HOUR, dayParts, hourLabel, teamName, teamColor } from './teams.js';
 import { calGrid, bindPaint, slotKey, workloadHtml, legendHtml } from './calendar.js';
 
@@ -506,6 +507,96 @@ export async function scheduleView() {
       const tick = (fn) => root.querySelectorAll('#qf-days input').forEach((i) => { i.checked = fn(i.value); });
       actions['qf-all'] = () => tick(() => true);
       actions['qf-weekdays'] = () => tick((d) => { const wd = new Date(`${d}T12:00:00Z`).getUTCDay(); return wd >= 1 && wd <= 5; });
+    },
+  };
+}
+
+// ── Letters of standing (Տեղեկանք) ──────────────────────────────────────────
+const letterLangLabel = (l) => t(`let.lang_${l}`);
+function letterDownloads(r) {
+  const btns = r.lang === 'both' ? ['hy', 'en', 'both'] : [r.lang];
+  return html`<div class="row" style="gap:.3rem">${btns.map((w) => html`<button class="btn secondary sm" type="button" data-act="letter-dl" data-id="${r.id}" data-which="${w}">⬇ ${t(`let.dl_${w}`)}</button>`)}</div>`;
+}
+
+export async function lettersView() {
+  const qualified = !!state.progress?.qualified;
+  let letters = await api.myLetters();
+  const pr = state.profile || {};
+  const num = (r) => `AUCB-BA${String(r.serial).padStart(3, '0')}`;
+  const table = () => (letters.length
+    ? html`<div class="table-wrap"><table><thead><tr><th>${t('let.col_number')}</th><th>${t('let.col_lang')}</th><th>${t('let.col_date')}</th><th>${t('let.col_status')}</th><th></th></tr></thead><tbody>
+      ${letters.map((r) => html`<tr class="${r.voided_at ? 'muted' : ''}"><td><b>${num(r)}</b></td><td>${letterLangLabel(r.lang)}</td><td class="small">${fmtDate(r.created_at)}</td>
+        <td>${r.voided_at ? html`<span class="chip bad">${t('let.voided')}</span>` : html`<span class="chip ok">✓ ${t('let.issued')}</span>`}</td>
+        <td>${r.voided_at ? '' : html`<div class="row" style="gap:.4rem">${letterDownloads(r)}<button class="btn ghost sm danger" type="button" data-act="letter-void" data-id="${r.id}">${t('let.void')}</button></div>`}</td></tr>`)}</tbody></table></div>`
+    : html`<div class="empty">${t('let.none')}</div>`);
+  const field = (name, label, value = '', extra = '') => html`<div class="field"><label for="lt-${name}">${label} *</label><input id="lt-${name}" name="${name}" type="text" maxlength="60" value="${value}" ${raw(extra)} required></div>`;
+  return {
+    html: html`<div class="main-head"><h1>${t('nav.letters')}</h1></div>
+      <p class="muted" style="max-width:760px">${t('let.intro')}</p>
+      ${!qualified ? html`<div class="banner"><span>🔒</span><div>${t('let.qualified_only')}</div></div>` : html`
+      <div class="card" style="max-width:820px"><h2 style="font-size:1.3rem">${t('let.new')}</h2>
+        <form data-form="letter" novalidate>
+          <div class="field"><label>${t('let.lang')} *</label><div class="chips" id="lt-langs">
+            ${['hy', 'en', 'both'].map((l, i) => html`<label class="cal-day-chip"><input type="radio" name="lang" value="${l}" ${i === 0 ? raw('checked') : ''}> <span>${t(`let.lang_${l}`)}</span></label>`)}</div></div>
+          <div id="lt-hy"><div class="grid-2">${field('first_name_hy', t('let.first_hy'), pr.first_name_hy || '')}${field('last_name_hy', t('let.last_hy'), pr.last_name_hy || '')}</div>
+            ${field('patronymic_hy', t('let.patr_hy'))}</div>
+          <div id="lt-en" hidden><div class="grid-2">${field('first_name_en', t('let.first_en'), pr.first_name_en || '')}${field('last_name_en', t('let.last_en'), pr.last_name_en || '')}</div>
+            <p class="muted small" style="margin:-.3rem 0 .8rem">${t('let.en_note')}</p></div>
+          <div class="grid-2"><div class="field"><label for="lt-pn">${t('let.passport_number')} *</label><input id="lt-pn" name="passport_number" type="text" maxlength="20" required></div>
+            <div class="field"><label for="lt-pon">${t('let.issued_on')} *</label><input id="lt-pon" name="passport_issued_on" type="date" min="1990-01-01" max="${new Date().toISOString().slice(0, 10)}" required></div></div>
+          <div class="field"><label for="lt-pby">${t('let.issued_by')} *</label><input id="lt-pby" name="passport_issued_by" type="text" maxlength="120" required><div class="hint">${t('let.issued_by_hint')}</div></div>
+          <div class="field" id="lt-pbe" hidden><label for="lt-pbe-in">${t('let.issued_by_en')} *</label><input id="lt-pbe-in" name="passport_issued_by_en" type="text" maxlength="120"></div>
+          <p class="muted small">${t('let.limit_note')}</p>
+          <button class="btn" type="submit">${t('let.submit')}</button></form></div>`}
+      <h2 style="font-size:1.3rem;margin-top:2rem">${t('let.mine')}</h2>
+      <div id="lt-list">${table()}</div>`,
+    mount(root) {
+      const form = root.querySelector('form[data-form=letter]');
+      const redraw = () => { root.querySelector('#lt-list').innerHTML = table().s; };
+      if (form) {
+        const val = (n) => form.elements[n].value.trim();
+        const sync = () => {
+          const lang = form.elements.lang.value;
+          root.querySelector('#lt-hy').hidden = lang === 'en'; root.querySelector('#lt-en').hidden = lang === 'hy';
+          // the issuing authority needs a Latin version when it is written in Armenian and an English letter is wanted
+          const needEn = lang !== 'hy' && /[Ա-և]/.test(val('passport_issued_by'));
+          root.querySelector('#lt-pbe').hidden = !needEn;
+        };
+        form.addEventListener('change', sync); form.addEventListener('input', sync); sync();
+        forms.letter = async () => {
+          const lang = form.elements.lang.value, needEn = lang !== 'hy', needHy = lang !== 'en';
+          const d = { lang, passport_number: val('passport_number'), passport_issued_on: val('passport_issued_on'), passport_issued_by: val('passport_issued_by') };
+          if (needHy) Object.assign(d, { first_name_hy: val('first_name_hy'), last_name_hy: val('last_name_hy'), patronymic_hy: val('patronymic_hy') });
+          if (needEn) Object.assign(d, { first_name_en: val('first_name_en'), last_name_en: val('last_name_en'), passport_issued_by_en: val('passport_issued_by_en') || null });
+          const missing = !d.passport_number || !d.passport_issued_on || !d.passport_issued_by
+            || (needHy && (!d.first_name_hy || !d.last_name_hy || !d.patronymic_hy)) || (needEn && (!d.first_name_en || !d.last_name_en || (/[Ա-և]/.test(d.passport_issued_by) && !d.passport_issued_by_en)));
+          if (missing) return formMsg(form, t('err.required'));
+          if (needHy && ![d.first_name_hy, d.last_name_hy, d.patronymic_hy].every((x) => /[Ա-և]/.test(x))) return formMsg(form, t('let.err_armenian'));
+          if (needEn && [d.first_name_en, d.last_name_en].some((x) => /[Ա-և]/.test(x))) return formMsg(form, t('let.err_latin'));
+          if (!(await confirmDialog({ title: t('let.confirm_title'), message: t('let.confirm_text'), confirmText: t('let.confirm_go') }))) return;
+          const btn = form.querySelector('[type=submit]'); setBusy(btn, true, t('common.wait'));
+          try {
+            const rec = await api.requestLetter(d);
+            letters = await api.myLetters();
+            toast(t('let.created', { num: num(rec) }));
+            form.reset(); sync(); redraw();
+            await downloadLetter(rec, rec.lang);
+          } catch (e) { formMsg(form, errText(e)); }
+          setBusy(btn, false);
+        };
+      }
+      actions['letter-dl'] = async (el) => {
+        const rec = letters.find((x) => String(x.id) === el.dataset.id); setBusy(el, true, t('common.wait'));
+        try { await downloadLetter(rec, el.dataset.which); } catch (e) { toast(errText(e), 'bad'); }
+        setBusy(el, false);
+      };
+      actions['letter-void'] = async (el) => {
+        const rec = letters.find((x) => String(x.id) === el.dataset.id);
+        if (!(await confirmDialog({ title: t('let.void'), message: t('let.void_confirm', { num: num(rec) }), danger: true, confirmText: t('let.void') }))) return;
+        setBusy(el, true, t('common.wait'));
+        try { await api.voidLetter(rec.id); letters = await api.myLetters(); toast(t('let.void_done')); redraw(); }
+        catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
+      };
     },
   };
 }
