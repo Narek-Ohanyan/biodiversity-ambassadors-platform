@@ -102,7 +102,7 @@ export async function aboutView() {
       ${src ? html`<img class="avatar" src="${src}" alt="${p.name[L]}" loading="lazy" data-fallback="${initials(...p.name.en.split(' '))}">` : html`<div class="avatar" aria-hidden="true">${initials(...p.name.en.split(' '))}</div>`}
       <div><h3>${p.name[L]}</h3><p class="role">${p.role[L]}</p>
         <p class="small">${p.bio[L]}</p>
-        <a class="btn secondary sm" href="${safeUrl(p.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></div></article>`;
+        ${p.linkedin ? html`<a class="btn secondary sm" href="${safeUrl(p.linkedin)}" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>` : ''}</div></article>`;
   };
   return {
     html: html`

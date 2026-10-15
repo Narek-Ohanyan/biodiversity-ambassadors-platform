@@ -29,7 +29,7 @@ function buildManifest() {
   return {
     carousel: list('home-carousel'),
     about: list('about'),
-    team: { alen: findTeamPhoto('alen'), narek: findTeamPhoto('narek') },
+    team: { alen: findTeamPhoto('alen'), narek: findTeamPhoto('narek'), lia: findTeamPhoto('lia') },
   };
 }
 
