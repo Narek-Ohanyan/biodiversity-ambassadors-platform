@@ -8,6 +8,8 @@ import { navigate } from './router.js';
 import { MEDIA_BASE } from './config.js';
 import { CONTENT } from './content.js';
 import { formMsg, localUniversity } from './pages-public.js';
+import { TEAMS, TEAM_ORDER, EVENT_DAYS, HOURS, FIRST_HOUR, LAST_HOUR, dayParts, hourLabel, teamName, teamColor } from './teams.js';
+import { calGrid, bindPaint, slotKey, workloadHtml, legendHtml } from './calendar.js';
 
 const opt = (list, sel) => list.map((o) => html`<option value="${o.key}" ${o.key === sel ? raw('selected') : ''}>${o[getLang()]}</option>`);
 
@@ -314,74 +316,66 @@ export async function learningView() {
 
 // ── Roles (volunteer roles; first one: Rapporteur) ─────────────────────────
 // Month names come from a table, not Intl: browsers without Armenian locale data silently fall back to English.
-const MONTHS = {
-  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-  hy: ['հունվարի', 'փետրվարի', 'մարտի', 'ապրիլի', 'մայիսի', 'հունիսի', 'հուլիսի', 'օգոստոսի', 'սեպտեմբերի', 'հոկտեմբերի', 'նոյեմբերի', 'դեկտեմբերի'],
-};
-function yerevanWhen(iso) {
-  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Yerevan' })
-    .formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
-  const L = getLang();
-  return `${parts.day} ${MONTHS[L][Number(parts.month) - 1]}${L === 'hy' ? ',' : ' at'} ${parts.hour}:${parts.minute}`;
-}
-
 function roleBlocks(blocks) {
   return blocks.map((b) => (b.p ? html`<p>${b.p}</p>`
     : b.quotes ? html`<ul class="role-quotes">${b.quotes.map((q) => html`<li>${q}</li>`)}</ul>`
     : html`<ul>${b.ul.map((i) => html`<li>${i}</li>`)}</ul>`));
 }
 
-function rapporteurCard(r) {
-  const L = getLang(), c = CONTENT.rapporteur;
-  const canSignUp = r.open && r.eligible;
-  const status = r.signed_up ? html`<span class="chip ok">✓ ${t('roles.signed_up')}</span>` : !r.eligible ? html`<span class="chip neutral">🔒 ${t('roles.qualified_only')}</span>`
-    : !r.open ? html`<span class="chip bad">${t('roles.closed')}</span>` : '';
-  const needsRecording = r.signed_up && !r.recording_watched;
-  const action = r.signed_up ? ''
-    : html`<button class="btn" type="button" data-act="role-signup" data-role="rapporteur" ${canSignUp ? '' : raw('disabled')}>${t('roles.become_rapporteur')}</button>`;
-  const note = r.signed_up ? t('roles.signed_note') : !r.eligible ? t('roles.not_eligible_note') : r.open ? t('roles.signup_note') : t('roles.closed_note');
-  // Signed-up ambassadors must watch the recording: it has to be opened from here before it can be confirmed.
-  const recording = !r.signed_up || !r.recording_url ? '' : html`<div class="activity" style="margin:1rem 0">
+const FULL_DAYS = () => (getLang() === 'hy' ? '19–30 հոկտեմբերի' : '19–30 October');
+
+function teamCard(key, r) {
+  const L = getLang(), tm = TEAMS[key];
+  const st = r.status; // null | pending | approved | rejected
+  const chip = st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>`
+    : st === 'pending' ? html`<span class="chip pending">${t('roles.st_pending')}</span>`
+    : st === 'rejected' ? html`<span class="chip bad">${t('roles.st_rejected')}</span>`
+    : !r.eligible ? html`<span class="chip neutral">🔒 ${t('roles.qualified_only')}</span>` : '';
+  const canApply = !st && r.open && r.eligible;
+  const cap = r.capacity ? `${r.approved}/${r.capacity}` : `${r.approved}/${t('roles.tbd')}`;
+  const needsRec = r.needs_recording && r.signed_up && !r.recording_watched;
+  const recording = !r.needs_recording || !r.signed_up || !r.recording_url ? '' : html`<div class="activity" style="margin:1rem 0">
       <div><h3>${t('roles.recording_title')}</h3>
         <div class="meta">${r.recording_watched ? html`<span class="chip ok">✓ ${t('roles.recording_done')}</span>` : html`<span class="chip pending">${t('roles.recording_pending')}</span>`}</div>
-        ${needsRecording ? html`<p class="muted small" style="margin:.4rem 0 0">${t('roles.recording_hint')}</p>` : ''}</div>
-      <div class="row"><a class="btn ${needsRecording && !r.recording_opened ? '' : 'secondary'}" data-rec-open data-role="rapporteur" href="${safeUrl(r.recording_url)}" target="_blank" rel="noopener noreferrer">${t('roles.recording_watch')} ↗</a>
-        ${needsRecording ? html`<button class="btn" type="button" data-act="role-rec-confirm" data-role="rapporteur" ${r.recording_opened ? '' : raw('disabled')}>${t('roles.recording_confirm')}</button>` : ''}</div></div>`;
-  return html`<div class="card"><div class="row" style="align-items:center;gap:.6rem"><h2 style="margin:0;font-size:1.4rem">${t('roles.rapporteur')}</h2>
-      <span class="chip pending">${t('roles.volunteer')}</span>${status}</div>
-    <p class="muted small" style="margin:.4rem 0 0">${c[L].event}</p>
-    <p style="margin:.8rem 0">${c[L].summary}</p>
-    ${r.deadline ? html`<div class="chips" style="margin-bottom:1rem"><span class="chip ${r.open ? 'credits' : 'neutral'}">⏰ ${t('roles.deadline', { when: yerevanWhen(r.deadline) })}</span></div>` : ''}
+        ${needsRec ? html`<p class="muted small" style="margin:.4rem 0 0">${t('roles.recording_hint')}</p>` : ''}</div>
+      <div class="row"><a class="btn ${needsRec && !r.recording_opened ? '' : 'secondary'}" data-rec-open data-role="${key}" href="${safeUrl(r.recording_url)}" target="_blank" rel="noopener noreferrer">${t('roles.recording_watch')} ↗</a>
+        ${needsRec ? html`<button class="btn" type="button" data-act="role-rec-confirm" data-role="${key}" ${r.recording_opened ? '' : raw('disabled')}>${t('roles.recording_confirm')}</button>` : ''}</div></div>`;
+  const note = st === 'approved' ? t('roles.note_approved') : st === 'pending' ? t('roles.note_pending') : st === 'rejected' ? t('roles.note_rejected')
+    : !r.eligible ? t('roles.not_eligible_note') : t('roles.note_apply');
+  return html`<div class="card team-card" style="--c:${tm.color}"><div class="row" style="align-items:center;gap:.6rem"><span class="dot big"></span><h2 style="margin:0;font-size:1.3rem">${tm.name[L]}</h2>${chip}</div>
+    <div class="chips" style="margin:.7rem 0">
+      <span class="chip info">👥 ${t('roles.applied', { n: r.applied })}</span>
+      <span class="chip ${r.capacity && r.approved >= r.capacity ? 'bad' : 'credits'}">✓ ${t('roles.approved_cap', { cap })}</span>
+      <span class="chip neutral">📅 ${FULL_DAYS()}</span>
+      ${r.min_hours ? html`<span class="chip neutral">⏱ ${t('roles.min_hours', { n: r.min_hours })}</span>` : ''}
+      ${tm.note[L] ? html`<span class="chip neutral">📍 ${tm.note[L]}</span>` : ''}</div>
+    <ul class="team-tasks">${tm.tasks[L].map((x) => html`<li>${x}</li>`)}</ul>
+    ${tm.extra ? tm.extra[L].map((x) => html`<p class="muted small" style="margin:.4rem 0">${x}</p>`) : ''}
     ${recording}
-    <div class="row">${action}<a class="btn secondary" href="${safeUrl(c.templateUrl)}" target="_blank" rel="noopener noreferrer">${t('roles.template')} ↗</a>
-      ${r.signed_up ? html`<button class="btn ghost" type="button" data-act="role-cancel" data-role="rapporteur">${t('roles.cancel')}</button>` : ''}</div>
+    <div class="row" style="margin-top:1rem">
+      ${!st ? html`<button class="btn" type="button" data-act="role-signup" data-role="${key}" ${canApply ? '' : raw('disabled')}>${t('roles.apply')}</button>` : ''}
+      ${r.signed_up ? html`<a class="btn" href="/app/schedule" data-link>📅 ${t('roles.plan_schedule')}</a>` : ''}
+      ${tm.rapporteur ? html`<a class="btn secondary" href="${safeUrl(CONTENT.rapporteur.templateUrl)}" target="_blank" rel="noopener noreferrer">${t('roles.template')} ↗</a>` : ''}
+      ${r.signed_up ? html`<button class="btn ghost" type="button" data-act="role-cancel" data-role="${key}">${t('roles.cancel')}</button>` : ''}</div>
     <p class="muted small" style="margin:.8rem 0 0">${note}</p></div>`;
 }
 
 export async function rolesView() {
   let roles = await api.myRoles();
   const L = getLang(), c = CONTENT.rapporteur;
+  const list = () => TEAM_ORDER.filter((k) => roles[k]).map((k) => teamCard(k, roles[k]));
   return {
-    html: html`<div class="main-head"><h1>${t('roles.title')}</h1></div>
-      <p class="muted" style="max-width:720px">${t('roles.intro')}</p>
-      <div id="role-slot">${rapporteurCard(roles.rapporteur)}</div>
+    html: html`<div class="main-head"><h1>${t('roles.title')}</h1><div class="grow"></div><a class="btn secondary" href="/app/schedule" data-link>📅 ${t('nav.schedule')}</a></div>
+      <p class="muted" style="max-width:760px">${t('roles.intro')}</p>
+      <div class="team-list" id="role-slot">${list()}</div>
       <h2 style="margin-top:2rem;font-size:1.4rem">${t('roles.instructions')}</h2>
       <div class="role-guide">${c[L].sections.map((s) => html`<section class="card flat" style="margin-bottom:1rem"><h3 style="margin-top:0">${s.title}</h3>${roleBlocks(s.blocks)}</section>`)}</div>`,
     mount(root) {
-      const redraw = () => { root.querySelector('#role-slot').innerHTML = rapporteurCard(roles.rapporteur).s; };
+      const slot = root.querySelector('#role-slot');
+      const redraw = () => { slot.innerHTML = list().map((x) => x.s).join(''); };
       actions['role-signup'] = async (el) => {
         setBusy(el, true, t('common.wait'));
         try { roles = await api.signupRole(el.dataset.role); toast(t('roles.signed_ok')); redraw(); }
-        catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
-      };
-      // Opening the recording is recorded (the confirm button needs it); the link itself opens normally in a new tab.
-      root.querySelector('#role-slot').addEventListener('click', async (e) => {
-        const link = e.target.closest('[data-rec-open]'); if (!link) return;
-        try { roles = await api.roleOpenRecording(link.dataset.role); redraw(); } catch { /* the link still opens */ }
-      });
-      actions['role-rec-confirm'] = async (el) => {
-        setBusy(el, true, t('common.wait'));
-        try { roles = await api.roleConfirmRecording(el.dataset.role); toast(t('roles.watched_ok')); redraw(); }
         catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
       };
       actions['role-cancel'] = async (el) => {
@@ -390,6 +384,125 @@ export async function rolesView() {
         try { roles = await api.cancelRole(el.dataset.role); toast(t('roles.cancelled')); redraw(); }
         catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
       };
+      // Opening the recording is recorded (the confirm button needs it); the link itself opens normally in a new tab.
+      slot.addEventListener('click', async (e) => {
+        const link = e.target.closest('[data-rec-open]'); if (!link) return;
+        try { roles = await api.roleOpenRecording(link.dataset.role); redraw(); } catch { /* the link still opens */ }
+      });
+      actions['role-rec-confirm'] = async (el) => {
+        setBusy(el, true, t('common.wait'));
+        try { roles = await api.roleConfirmRecording(el.dataset.role); toast(t('roles.watched_ok')); redraw(); }
+        catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
+      };
+    },
+  };
+}
+
+// ── My schedule: an interactive calendar for the days of COP17 ──────────────
+export async function scheduleView() {
+  const [roles, shifts] = await Promise.all([api.myRoles(), api.myShifts()]);
+  const mine = TEAM_ORDER.filter((k) => roles[k]?.signed_up);
+  if (!mine.length) {
+    return { html: html`<div class="main-head"><h1>${t('nav.schedule')}</h1></div><div class="empty"><p>${t('cal.no_roles')}</p><a class="btn" href="/app/roles" data-link>${t('nav.roles')}</a></div>` };
+  }
+  const slots = new Map(shifts.map((s) => [slotKey(s.day, s.hour), s.role]));
+  let brush = mine[0];
+  const pending = new Map();
+  let timer = null, saving = false, failed = false;
+
+  const cellOf = (d, h) => { const tm = slots.get(slotKey(d, h)); return tm ? { cls: 'filled', style: `--c:${teamColor(tm)}`, title: teamName(tm) } : { title: '' }; };
+  const dayExtra = (d) => html`<button type="button" class="cal-copy" data-act="cal-copy" data-d="${d}" title="${t('cal.copy_hint')}" aria-label="${t('cal.copy_hint')}">⧉</button>`;
+  const grid = () => calGrid({ cell: cellOf, dayExtra, interactive: true, label: t('nav.schedule') });
+  const hoursOpts = (from, to, sel) => Array.from({ length: to - from + 1 }, (_, i) => from + i).map((h) => html`<option value="${h}" ${h === sel ? raw('selected') : ''}>${hourLabel(h)}</option>`);
+  const total = () => [...slots.values()].length;
+  return {
+    html: html`<div class="main-head"><h1>${t('nav.schedule')}</h1><div class="grow"></div><span class="cal-status" id="cal-status" role="status"></span></div>
+      <p class="muted" style="max-width:760px">${t('cal.intro')}</p>
+      <div class="card flat cal-tools">
+        <div class="small muted" style="margin-bottom:.4rem">${t('cal.pick_team')}</div>
+        <div id="cal-legend">${legendHtml(mine, { eraser: true, active: brush, interactive: true })}</div>
+        <details class="cal-quick"><summary>${t('cal.quick')}</summary>
+          <div class="row" style="align-items:flex-end;margin-top:.6rem">
+            <div class="field" style="margin:0"><label for="qf-team">${t('cal.team')}</label><select id="qf-team">${mine.map((k) => html`<option value="${k}">${teamName(k)}</option>`)}</select></div>
+            <div class="field" style="margin:0"><label for="qf-from">${t('cal.from')}</label><select id="qf-from">${hoursOpts(FIRST_HOUR, LAST_HOUR, 10)}</select></div>
+            <div class="field" style="margin:0"><label for="qf-to">${t('cal.to')}</label><select id="qf-to">${hoursOpts(FIRST_HOUR + 1, LAST_HOUR + 1, 14)}</select></div></div>
+          <div class="chips" id="qf-days" style="margin:.7rem 0">${EVENT_DAYS.map((d) => html`<label class="cal-day-chip"><input type="checkbox" value="${d}" checked> <span>${dayParts(d).wd} ${dayParts(d).num}</span></label>`)}</div>
+          <div class="row"><button class="btn sm" type="button" data-act="qf-apply">${t('cal.apply')}</button><button class="btn secondary sm" type="button" data-act="qf-clear">${t('cal.clear_sel')}</button>
+            <button class="btn ghost sm" type="button" data-act="qf-all">${t('cal.all_days')}</button><button class="btn ghost sm" type="button" data-act="qf-weekdays">${t('cal.weekdays')}</button></div>
+        </details></div>
+      <div id="cal-grid">${grid()}</div>
+      <p class="muted small" style="margin:.7rem 0">${t('cal.tips')}</p>
+      <h2 style="font-size:1.2rem;margin:1.2rem 0 .5rem">${t('cal.workload')} <span class="chip info" id="cal-total">${t('cal.hours_total', { n: total() })}</span></h2>
+      <div id="cal-work">${workloadHtml(mine, slots, roles)}</div>
+      <p class="muted small">${t('cal.shared_note')}</p>`,
+    mount(root) {
+      const status = root.querySelector('#cal-status');
+      const setStatus = (kind, extra = '') => {
+        status.className = `cal-status ${kind}`;
+        status.innerHTML = kind === 'saving' ? `<span class="spinner"></span> ${esc(t('cal.saving'))}` : kind === 'saved' ? `✓ ${esc(t('cal.saved'))}`
+          : kind === 'error' ? `⚠ ${esc(extra)} <button class="link-btn" type="button" data-act="cal-retry">${esc(t('cal.retry'))}</button>` : '';
+      };
+      const cellEl = (d, h) => root.querySelector(`.cal-cell[data-d="${d}"][data-h="${h}"]`);
+      let workTimer = 0;
+      const refreshWork = () => {
+        clearTimeout(workTimer);
+        workTimer = setTimeout(() => {
+          root.querySelector('#cal-work').innerHTML = workloadHtml(mine, slots, roles).s;
+          root.querySelector('#cal-total').textContent = t('cal.hours_total', { n: total() });
+        }, 30);
+      };
+      const flush = async () => {
+        if (saving || !pending.size) return;
+        saving = true; failed = false; setStatus('saving');
+        const batch = [...pending]; pending.clear();
+        try {
+          await api.setMyShifts(batch.map(([k, tm]) => { const [day, hour] = k.split('|'); return { day, hour: Number(hour), role: tm }; }));
+        } catch (e) {
+          for (const [k, v] of batch) if (!pending.has(k)) pending.set(k, v);
+          failed = true; setStatus('error', errText(e));
+        }
+        saving = false;
+        if (!failed) { if (pending.size) flush(); else setStatus('saved'); }
+      };
+      const queueSave = () => { clearTimeout(timer); failed = false; setStatus('saving'); timer = setTimeout(flush, 500); };
+      const set = (d, h, tm) => {
+        const k = slotKey(d, h);
+        if ((slots.get(k) || null) === (tm || null)) return;
+        if (tm) slots.set(k, tm); else slots.delete(k);
+        pending.set(k, tm || null);
+        const el = cellEl(d, h);
+        if (el) { el.classList.toggle('filled', !!tm); el.style.cssText = tm ? `--c:${teamColor(tm)}` : ''; el.title = tm ? teamName(tm) : ''; }
+        queueSave(); refreshWork();
+      };
+      window.addEventListener('beforeunload', (e) => { if (pending.size) { e.preventDefault(); e.returnValue = ''; } });
+      bindPaint(root.querySelector('#cal-grid'), {
+        onStart: (d, h) => (brush === '__erase' ? 'erase' : slots.get(slotKey(d, h)) === brush ? 'erase' : 'paint'),
+        onApply: (d, h, mode) => set(d, h, mode === 'paint' ? brush : null),
+      });
+      actions['cal-brush'] = (el) => {
+        brush = el.dataset.team;
+        root.querySelector('#cal-legend').innerHTML = legendHtml(mine, { eraser: true, active: brush, interactive: true }).s;
+        if (brush !== '__erase') root.querySelector('#qf-team').value = brush;
+      };
+      actions['cal-retry'] = () => { failed = false; flush(); };
+      actions['cal-row'] = (el) => {
+        const h = Number(el.dataset.h);
+        if (brush === '__erase') { for (const d of EVENT_DAYS) set(d, h, null); return; }
+        const all = EVENT_DAYS.every((d) => slots.get(slotKey(d, h)) === brush);
+        for (const d of EVENT_DAYS) set(d, h, all ? null : brush);
+      };
+      actions['cal-copy'] = async (el) => {
+        const src = el.dataset.d;
+        if (!(await confirmDialog({ title: t('cal.copy_title'), message: t('cal.copy_confirm', { day: dayParts(src).long }), confirmText: t('cal.copy_go') }))) return;
+        for (const d of EVENT_DAYS) if (d !== src) for (const h of HOURS) set(d, h, slots.get(slotKey(src, h)) || null);
+      };
+      const chosenDays = () => [...root.querySelectorAll('#qf-days input:checked')].map((i) => i.value);
+      const range = () => { const a = Number(root.querySelector('#qf-from').value), b = Number(root.querySelector('#qf-to').value); return HOURS.filter((h) => h >= a && h < b); };
+      actions['qf-apply'] = () => { const tm = root.querySelector('#qf-team').value; for (const d of chosenDays()) for (const h of range()) set(d, h, tm); };
+      actions['qf-clear'] = () => { for (const d of chosenDays()) for (const h of range()) set(d, h, null); };
+      const tick = (fn) => root.querySelectorAll('#qf-days input').forEach((i) => { i.checked = fn(i.value); });
+      actions['qf-all'] = () => tick(() => true);
+      actions['qf-weekdays'] = () => tick((d) => { const wd = new Date(`${d}T12:00:00Z`).getUTCDay(); return wd >= 1 && wd <= 5; });
     },
   };
 }

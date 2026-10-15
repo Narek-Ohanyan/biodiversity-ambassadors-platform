@@ -8,6 +8,8 @@ import { navigate } from './router.js';
 import { formMsg, ambassadorBody, localUniversity } from './pages-public.js';
 import { updateBadges } from './pages-common.js';
 import { ambUrl, ambCode, qrSvg, qrPng, makeZip, download, qrFileStem } from './qr.js';
+import { TEAM_ORDER, EVENT_DAYS, HOURS, FIRST_HOUR, LAST_HOUR, dayParts, hourLabel, teamName, teamColor } from './teams.js';
+import { calGrid, slotKey, workloadHtml, heat } from './calendar.js';
 
 const L = () => getLang();
 const fullName = (a) => `${a.first_name || ''} ${a.last_name || ''}`.trim();
@@ -292,38 +294,176 @@ export async function qrView() {
   };
 }
 
-// ── Roles (who signed up for each volunteer role) ──────────────────────────
+// ── Roles: applications per team, approval, individual schedules ───────────
+const roleStatusChip = (st) => (st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>` : st === 'rejected' ? html`<span class="chip bad">${t('roles.st_rejected')}</span>` : html`<span class="chip pending">${t('roles.st_pending')}</span>`);
+
+let shiftCache = null;
+const loadShifts = async (force = false) => (shiftCache = !force && shiftCache ? shiftCache : await api.mgr.shifts());
+
+// One person's calendar (read-only): every slot they planned, coloured by team, plus the workload table.
+function personCalendar(uid, rows, roleCfg) {
+  const mine = rows.filter((r) => r.id === uid);
+  const teams = TEAM_ORDER.filter((k) => mine.some((r) => r.role === k));
+  const slots = new Map();
+  for (const sh of shiftCache) if (sh.u === uid) slots.set(slotKey(sh.d, sh.h), sh.r);
+  const cell = (d, h) => { const tm = slots.get(slotKey(d, h)); return tm ? { cls: 'filled', style: `--c:${teamColor(tm)}`, title: teamName(tm) } : {}; };
+  return html`<div class="cal-legend">${teams.map((k) => { const r = mine.find((x) => x.role === k); return html`<span class="cal-chip static" style="--c:${teamColor(k)}"><span class="dot"></span>${teamName(k)} · ${t(`roles.st_${r.status}`)}</span>`; })}</div>
+    ${slots.size ? calGrid({ cell, label: t('mgr.schedule') }) : html`<div class="empty">${t('cal.person_empty')}</div>`}
+    <h3 style="margin:1rem 0 .4rem">${t('cal.workload')} <span class="chip info">${t('cal.hours_total', { n: slots.size })}</span></h3>${workloadHtml(teams, slots, roleCfg)}`;
+}
+
 export async function rolesView() {
-  const d = await api.mgr.roleSignups('rapporteur');
-  const rows = d.rows;
-  const emails = () => rows.map((r) => r.email).join(', ');
+  let d = await api.mgr.roles();
+  const openSet = new Set(d.roles.filter((r) => r.pending > 0).map((r) => r.role));
+  const cfgMap = () => Object.fromEntries(d.roles.map((r) => [r.role, r]));
+  const person = (r) => fullName(r) || r.email;
+  const section = (cfg) => {
+    const rows = d.rows.filter((r) => r.role === cfg.role);
+    const full = cfg.capacity && cfg.approved >= cfg.capacity;
+    return html`<details class="card team-sec" data-role="${cfg.role}" style="--c:${teamColor(cfg.role)}" ${openSet.has(cfg.role) ? raw('open') : ''}>
+      <summary><span class="dot big"></span><b>${teamName(cfg.role)}</b>
+        <span class="chip ${full ? 'bad' : 'ok'}">✓ ${cfg.approved}/${cfg.capacity ?? t('roles.tbd')}</span>
+        <span class="chip pending">${t('mgr.rs_pending', { n: cfg.pending })}</span>${cfg.rejected ? html`<span class="chip neutral">${t('mgr.rs_rejected', { n: cfg.rejected })}</span>` : ''}
+        ${cfg.min_hours ? html`<span class="chip neutral">⏱ ${t('roles.min_hours', { n: cfg.min_hours })}</span>` : ''}</summary>
+      <div class="row" style="margin:.8rem 0"><button class="btn secondary sm" type="button" data-act="roles-copy" data-role="${cfg.role}" ${rows.length ? '' : raw('disabled')}>${t('roles.copy_emails')}</button>
+        <button class="btn secondary sm" type="button" data-act="roles-csv" data-role="${cfg.role}" ${rows.length ? '' : raw('disabled')}>⬇ ${t('roles.export')}</button></div>
+      ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('profile.university')}</th><th>${t('mgr.status')}</th>${cfg.needs_recording ? html`<th>${t('roles.recording_done')}</th>` : ''}<th>${t('cal.hours')}</th><th>${t('roles.signed_at')}</th><th></th></tr></thead><tbody>
+        ${rows.map((r) => html`<tr><td><b>${person(r)}</b>${r.qualified ? '' : html` <span class="chip bad">${t('roles.not_qualified')}</span>`}<div class="small muted">${r.email}</div></td>
+          <td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td>${roleStatusChip(r.status)}</td>
+          ${cfg.needs_recording ? html`<td>${r.watched ? html`<span class="chip ok">✓ ${t('roles.watched')}</span>` : html`<span class="chip neutral">${t('roles.not_watched')}</span>`}</td>` : ''}
+          <td>${r.hours || '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td>
+          <td><div class="row" style="flex-wrap:nowrap;gap:.3rem">
+            ${r.status !== 'approved' ? html`<button class="btn sm" type="button" data-act="roles-decide" data-id="${r.id}" data-role="${cfg.role}" data-status="approved">${t('mgr.approve')}</button>` : ''}
+            ${r.status !== 'rejected' ? html`<button class="btn secondary sm" type="button" data-act="roles-decide" data-id="${r.id}" data-role="${cfg.role}" data-status="rejected">${t('mgr.reject')}</button>` : ''}
+            ${r.status !== 'pending' ? html`<button class="btn ghost sm" type="button" data-act="roles-decide" data-id="${r.id}" data-role="${cfg.role}" data-status="pending" title="${t('mgr.back_pending')}">↺</button>` : ''}
+            <button class="btn ghost sm" type="button" data-act="roles-schedule" data-id="${r.id}">📅</button>
+            <button class="btn ghost sm danger" type="button" data-act="roles-remove" data-id="${r.id}" data-role="${cfg.role}">${t('roles.remove')}</button></div></td></tr>`)}</tbody></table></div>`
+        : html`<div class="empty">${t('roles.none')}</div>`}</details>`;
+  };
   return {
-    html: html`<div class="main-head"><h1>${t('mgr.roles')}</h1></div>
-    <p class="muted" style="max-width:760px">${t('roles.mgr_intro')}</p>
-    <div class="row" style="margin:1rem 0 .8rem"><h2 style="margin:0;font-size:1.4rem">${t('roles.rapporteur')}</h2><span class="chip ok">${t('roles.mgr_count', { n: rows.length })}</span>
-      <div class="grow"></div><button class="btn secondary sm" type="button" data-act="roles-copy" ${rows.length ? '' : raw('disabled')}>${t('roles.copy_emails')}</button>
-      <button class="btn secondary sm" type="button" data-act="roles-csv" ${rows.length ? '' : raw('disabled')}>⬇ ${t('roles.export')}</button></div>
-    ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('auth.email')}</th><th>${t('profile.university')}</th><th>${t('roles.signed_at')}</th><th>${t('roles.recording_done')}</th><th></th></tr></thead><tbody>
-      ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b>${r.qualified ? '' : html` <span class="chip bad">${t('roles.not_qualified')}</span>`}</td><td class="small">${r.email}</td><td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td><td>${r.watched ? html`<span class="chip ok" title="${fmtDateTime(r.watched_at)}">✓ ${t('roles.watched')}</span>` : html`<span class="chip neutral">${t('roles.not_watched')}</span>`}</td>
-        <td><button class="btn sm danger" type="button" data-act="roles-remove" data-id="${r.id}">${t('roles.remove')}</button></td></tr>`)}</tbody></table></div>`
-      : html`<div class="empty">${t('roles.none')}</div>`}`,
-    mount() {
-      actions['roles-remove'] = async (el) => {
-        const r = rows.find((x) => x.id === el.dataset.id);
-        if (!(await confirmDialog({ title: t('roles.remove'), message: `${fullName(r) || r.email} (${r.email}) — ${t('roles.remove_confirm')}`, danger: true, confirmText: t('roles.remove') }))) return;
+    html: html`<div class="main-head"><h1>${t('mgr.roles')}</h1><div class="grow"></div><a class="btn secondary" href="/manager/schedule" data-link>📅 ${t('mgr.schedule')}</a>
+        <button class="btn secondary" type="button" data-act="roles-csv" data-role="*">⬇ ${t('roles.export_all')}</button></div>
+      <p class="muted" style="max-width:760px">${t('mgr.roles_intro')}</p>
+      <div class="team-list" id="team-secs">${d.roles.map(section)}</div>`,
+    mount(root) {
+      const box = root.querySelector('#team-secs');
+      const draw = () => { box.innerHTML = d.roles.map((c) => section(c).s).join(''); };
+      box.addEventListener('toggle', (e) => { const k = e.target.dataset?.role; if (k) (e.target.open ? openSet.add(k) : openSet.delete(k)); }, true);
+      const reload = async () => { d = await api.mgr.roles(); draw(); };
+      actions['roles-decide'] = async (el) => {
         setBusy(el, true, t('common.wait'));
-        try { await api.mgr.removeRoleSignup(r.id, 'rapporteur'); toast(t('roles.removed')); navigate(location.pathname); }
+        try { await api.mgr.decideRole(el.dataset.id, el.dataset.role, el.dataset.status); toast(t('mgr.role_updated')); shiftCache = null; await reload(); }
         catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
       };
-      actions['roles-copy'] = async () => {
-        try { await navigator.clipboard.writeText(emails()); toast(t('roles.copied')); } catch (e) { toast(errText(e), 'bad'); }
+      actions['roles-remove'] = async (el) => {
+        const r = d.rows.find((x) => x.id === el.dataset.id && x.role === el.dataset.role);
+        if (!(await confirmDialog({ title: t('roles.remove'), message: `${person(r)} (${r.email}) — ${t('roles.remove_confirm')}`, danger: true, confirmText: t('roles.remove') }))) return;
+        setBusy(el, true, t('common.wait'));
+        try { await api.mgr.removeRoleSignup(r.id, r.role); toast(t('roles.removed')); shiftCache = null; await reload(); }
+        catch (e) { toast(errText(e), 'bad'); setBusy(el, false); }
       };
-      actions['roles-csv'] = () => {
-        const body = rows.map((r) => [r.email, r.first_name, r.last_name, r.university, r.faculty, r.created_at, r.watched ? 'yes' : 'no'].map(csvCell).join(','));
-        const blob = new Blob(['﻿' + [['email', 'first_name', 'last_name', 'university', 'faculty', 'signed_up', 'watched_recording'].join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
+      actions['roles-schedule'] = async (el) => {
+        const uid = el.dataset.id; const r = d.rows.find((x) => x.id === uid);
+        const m = openModal({ title: `${person(r)} — ${t('mgr.schedule')}`, wide: true, body: html`<div class="loading"><span class="spinner"></span></div>` });
+        try { await loadShifts(true); m.el.querySelector('.modal-body').innerHTML = personCalendar(uid, d.rows, cfgMap()).s; }
+        catch (e) { m.el.querySelector('.modal-body').innerHTML = html`<div class="form-error">${errText(e)}</div>`.s; }
+      };
+      const pick = (role) => d.rows.filter((r) => role === '*' || r.role === role);
+      actions['roles-copy'] = async (el) => {
+        try { await navigator.clipboard.writeText([...new Set(pick(el.dataset.role).filter((r) => r.status !== 'rejected').map((r) => r.email))].join(', ')); toast(t('roles.copied')); }
+        catch (e) { toast(errText(e), 'bad'); }
+      };
+      actions['roles-csv'] = (el) => {
+        const body = pick(el.dataset.role).map((r) => [teamName(r.role), r.status, r.email, r.first_name, r.last_name, r.university, r.faculty, r.created_at, cfgMap()[r.role]?.needs_recording ? (r.watched ? 'yes' : 'no') : '', r.hours].map(csvCell).join(','));
+        const head = ['team', 'status', 'email', 'first_name', 'last_name', 'university', 'faculty', 'applied', 'watched_recording', 'hours_planned'];
+        const blob = new Blob(['﻿' + [head.join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob); const link = document.createElement('a');
-        link.href = url; link.download = `rapporteurs-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url);
+        link.href = url; link.download = `${el.dataset.role === '*' ? 'team-applications' : el.dataset.role}-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url);
       };
+    },
+  };
+}
+
+// ── Schedule: summary calendar (who is engaged when, where the gaps are) and each ambassador's own ──
+export async function scheduleView() {
+  const [d, shifts] = await Promise.all([api.mgr.roles(), loadShifts(true)]);
+  const cfgMap = Object.fromEntries(d.roles.map((r) => [r.role, r]));
+  const people = new Map();
+  for (const r of d.rows) if (!people.has(r.id)) people.set(r.id, r);
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem('cover') || '{}'); } catch { /* defaults */ }
+  const f = { team: '', pending: true, from: saved.from ?? 9, to: saved.to ?? 19 };
+  const person = (uid) => { const r = people.get(uid); return r ? (fullName(r) || r.email) : uid; };
+  const hoursOpts = (from, to, sel) => Array.from({ length: to - from + 1 }, (_, i) => from + i).map((h) => html`<option value="${h}" ${h === sel ? raw('selected') : ''}>${hourLabel(h)}</option>`);
+
+  // slotKey -> [{u, r, s}] for the current filters
+  const engaged = () => {
+    const m = new Map();
+    for (const sh of shifts) {
+      if (f.team && sh.r !== f.team) continue;
+      if (sh.s === 'rejected' || (sh.s === 'pending' && !f.pending)) continue;
+      const k = slotKey(sh.d, sh.h); (m.get(k) || m.set(k, []).get(k)).push(sh);
+    }
+    return m;
+  };
+  const inCover = (h) => h >= f.from && h < f.to;
+  const range = (hs) => { const out = []; let i = 0; while (i < hs.length) { let j = i; while (j + 1 < hs.length && hs[j + 1] === hs[j] + 1) j++; out.push(hs[i] === hs[j] ? hourLabel(hs[i]) : `${hourLabel(hs[i])}–${hourLabel(hs[j] + 1)}`); i = j + 1; } return out; };
+
+  const summary = () => {
+    const m = engaged(); let max = 0; for (const v of m.values()) max = Math.max(max, new Set(v.map((x) => x.u)).size);
+    const gapsByDay = Object.fromEntries(EVENT_DAYS.map((day) => [day, HOURS.filter((h) => inCover(h) && !m.has(slotKey(day, h)))]));
+    const gapTotal = Object.values(gapsByDay).reduce((n, a) => n + a.length, 0);
+    const needed = EVENT_DAYS.length * HOURS.filter(inCover).length;
+    const cell = (day, h) => { const v = m.get(slotKey(day, h)); const n = v ? new Set(v.map((x) => x.u)).size : 0;
+      return { cls: `${n ? '' : inCover(h) ? 'gap' : ''}`, style: heat(n, max), text: n || '', title: t('cal.engaged_n', { n }) }; };
+    const dayExtra = (day) => (gapsByDay[day].length ? html`<span class="cal-gapbadge">${gapsByDay[day].length}</span>` : html`<span class="cal-okbadge">✓</span>`);
+    return html`<div class="stats cal-stats"><div class="stat"><b>${needed - gapTotal}/${needed}</b><span>${t('cal.covered')}</span></div>
+        <div class="stat ${gapTotal ? 'bad' : ''}"><b>${gapTotal}</b><span>${t('cal.gaps')}</span></div>
+        <div class="stat"><b>${new Set([...m.values()].flat().map((x) => x.u)).size}</b><span>${t('cal.people_scheduled')}</span></div></div>
+      ${calGrid({ cell, dayExtra, dimHour: (h) => !inCover(h), label: t('mgr.schedule') })}
+      <p class="muted small" style="margin:.6rem 0">${t('cal.summary_hint')}</p>
+      <div id="cal-detail"></div>
+      ${gapTotal ? html`<h3 style="margin:1rem 0 .4rem">${t('cal.gap_list')}</h3><div class="gap-list">${EVENT_DAYS.filter((day) => gapsByDay[day].length).map((day) => html`<div class="gap-row"><b>${dayParts(day).wd} ${dayParts(day).long}</b> ${range(gapsByDay[day]).map((x) => html`<span class="chip bad">${x}</span>`)}</div>`)}</div>`
+        : html`<div class="banner ok"><span>✓</span><div>${t('cal.no_gaps')}</div></div>`}`;
+  };
+  const sortedPeople = () => [...people.values()].sort((a, b) => (fullName(a) || a.email).localeCompare(fullName(b) || b.email));
+  const personTab = (uid) => (uid ? personCalendar(uid, d.rows, cfgMap) : html`<div class="empty">${t('cal.pick_person')}</div>`);
+
+  return {
+    html: html`<div class="main-head"><h1>${t('mgr.schedule')}</h1><div class="grow"></div><button class="btn secondary" type="button" data-act="sched-reload">↻ ${t('cal.refresh')}</button></div>
+      <p class="muted" style="max-width:760px">${t('mgr.schedule_intro')}</p>
+      <div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-act="sched-tab" data-tab="summary">${t('cal.tab_summary')}</button><button role="tab" type="button" aria-selected="false" data-act="sched-tab" data-tab="person">${t('cal.tab_person')}</button></div>
+      <div id="sched-summary-pane"><div class="toolbar">
+        <select id="sf-team" aria-label="${t('cal.team')}"><option value="">${t('cal.all_teams')}</option>${TEAM_ORDER.filter((k) => cfgMap[k]).map((k) => html`<option value="${k}">${teamName(k)}</option>`)}</select>
+        <label class="check"><input type="checkbox" id="sf-pending" checked> <span>${t('cal.include_pending')}</span></label>
+        <span class="muted small">${t('cal.cover_hours')}</span>
+        <select id="sf-from" aria-label="${t('cal.from')}">${hoursOpts(FIRST_HOUR, LAST_HOUR, f.from)}</select>–<select id="sf-to" aria-label="${t('cal.to')}">${hoursOpts(FIRST_HOUR + 1, LAST_HOUR + 1, f.to)}</select></div>
+        <div id="sched-summary">${summary()}</div></div>
+      <div id="sched-person-pane" hidden><div class="toolbar"><select id="sp-pick" aria-label="${t('cal.tab_person')}"><option value="">${t('cal.pick_person')}</option>${sortedPeople().map((r) => html`<option value="${r.id}">${fullName(r) || r.email}</option>`)}</select></div>
+        <div id="sched-person">${personTab('')}</div></div>`,
+    mount(root) {
+      const redraw = () => { root.querySelector('#sched-summary').innerHTML = summary().s; };
+      const val = (id) => root.querySelector(id);
+      val('#sf-team').addEventListener('change', (e) => { f.team = e.target.value; redraw(); });
+      val('#sf-pending').addEventListener('change', (e) => { f.pending = e.target.checked; redraw(); });
+      const cover = () => { f.from = Number(val('#sf-from').value); f.to = Number(val('#sf-to').value); if (f.to <= f.from) { f.to = f.from + 1; val('#sf-to').value = f.to; } try { localStorage.setItem('cover', JSON.stringify({ from: f.from, to: f.to })); } catch { /* optional */ } redraw(); };
+      val('#sf-from').addEventListener('change', cover); val('#sf-to').addEventListener('change', cover);
+      val('#sp-pick').addEventListener('change', (e) => { val('#sched-person').innerHTML = personTab(e.target.value).s; });
+      actions['sched-tab'] = (el) => {
+        root.querySelectorAll('[data-act=sched-tab]').forEach((b) => b.setAttribute('aria-selected', String(b === el)));
+        val('#sched-summary-pane').hidden = el.dataset.tab !== 'summary'; val('#sched-person-pane').hidden = el.dataset.tab !== 'person';
+      };
+      actions['sched-reload'] = () => navigate(location.pathname);
+      // click a cell of the summary to see who is engaged then
+      root.addEventListener('click', (e) => {
+        const c = e.target.closest('#sched-summary .cal-cell'); if (!c) return;
+        root.querySelectorAll('#sched-summary .cal-cell.sel').forEach((x) => x.classList.remove('sel')); c.classList.add('sel');
+        const list = engaged().get(slotKey(c.dataset.d, Number(c.dataset.h))) || [];
+        const day = dayParts(c.dataset.d);
+        val('#cal-detail').innerHTML = html`<div class="card flat"><b>${day.wd} ${day.long}, ${hourLabel(Number(c.dataset.h))}–${hourLabel(Number(c.dataset.h) + 1)}</b>
+          ${list.length ? html`<ul class="detail-list">${list.map((x) => html`<li><span class="cal-chip static" style="--c:${teamColor(x.r)}"><span class="dot"></span>${teamName(x.r)}</span> ${person(x.u)} ${x.s === 'pending' ? html`<span class="chip pending">${t('roles.st_pending')}</span>` : ''}</li>`)}</ul>`
+            : html`<p class="muted" style="margin:.4rem 0 0">${t('cal.nobody')}</p>`}</div>`.s;
+      });
     },
   };
 }

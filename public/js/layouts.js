@@ -46,12 +46,12 @@ function shell(navHtml, content, homeHref) {
 }
 
 export function ambassadorShell(content, path) {
-  return shell(html`${sideLink('/app/profile', '👤', t('nav.profile'), path)}${sideLink('/app/notifications', '🔔', t('nav.notifications'), path, 'notifications')}${sideLink('/app/learning', '🎓', t('nav.learning'), path)}${sideLink('/app/roles', '🙋', t('nav.roles'), path)}`, content, '/app');
+  return shell(html`${sideLink('/app/profile', '👤', t('nav.profile'), path)}${sideLink('/app/notifications', '🔔', t('nav.notifications'), path, 'notifications')}${sideLink('/app/learning', '🎓', t('nav.learning'), path)}${sideLink('/app/roles', '🙋', t('nav.roles'), path)}${sideLink('/app/schedule', '📅', t('nav.schedule'), path)}`, content, '/app');
 }
 
 export function managerShell(content, path) {
   return shell(html`${sideLink('/manager', '📊', t('mgr.overview'), path)}${sideLink('/manager/ambassadors', '👥', t('mgr.ambassadors'), path)}
-    ${sideLink('/manager/claims', '✅', t('mgr.claims'), path, 'claims')}${sideLink('/manager/checkins', '📋', t('mgr.checkins'), path)}${sideLink('/manager/webinar', '🎥', t('mgr.webinar'), path)}${sideLink('/manager/roles', '🙋', t('mgr.roles'), path)}${sideLink('/manager/qr', '🔳', t('mgr.qr'), path)}
+    ${sideLink('/manager/claims', '✅', t('mgr.claims'), path, 'claims')}${sideLink('/manager/checkins', '📋', t('mgr.checkins'), path)}${sideLink('/manager/webinar', '🎥', t('mgr.webinar'), path)}${sideLink('/manager/roles', '🙋', t('mgr.roles'), path)}${sideLink('/manager/schedule', '📅', t('mgr.schedule'), path)}${sideLink('/manager/qr', '🔳', t('mgr.qr'), path)}
     ${sideLink('/manager/messages', '📣', t('mgr.messages'), path)}${sideLink('/manager/inbox', '✉️', t('mgr.inbox'), path, 'inbox')}
     ${sideLink('/manager/notifications', '🔔', t('nav.notifications'), path, 'notifications')}${sideLink('/manager/account', '⚙️', t('mgr.account'), path)}`, content, '/manager');
 }

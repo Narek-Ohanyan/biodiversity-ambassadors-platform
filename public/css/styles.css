@@ -266,3 +266,49 @@ th { background: var(--forest-50); font-size: .76rem; text-transform: uppercase;
 
 /* Site-wide notice under the header (e.g. registration closed) */
 .notice-bar { background: #fbeadf; color: #6b2d12; border-bottom: 1px solid #efc9b0; font-size: .92rem; font-weight: 600; text-align: center; padding: .55rem 0; }
+
+/* ── Volunteer teams and the schedule calendar ── */
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.dot.big { width: 14px; height: 14px; }
+.team-list { display: grid; gap: 1rem; margin-top: 1rem; }
+.team-card, .team-sec { border-left: 5px solid var(--c); }
+.team-card .dot, .team-sec .dot { background: var(--c); }
+.team-tasks { margin: .3rem 0 .6rem 1.1rem; padding: 0; }
+.team-sec > summary { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; cursor: pointer; list-style: none; }
+.team-sec > summary::-webkit-details-marker { display: none; }
+.team-sec[open] > summary { margin-bottom: .2rem; }
+
+.cal-tools { margin: 1rem 0; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: .4rem; }
+.cal-chip { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .8rem; border-radius: 999px; border: 2px solid var(--c); background: #fff; color: var(--ink); font-size: .85rem; font-weight: 600; cursor: pointer; }
+.cal-chip .dot { background: var(--c); }
+.cal-chip.on { background: var(--c); color: #fff; } .cal-chip.on .dot { background: #fff; }
+.cal-chip.static { cursor: default; border-width: 1px; }
+.cal-quick { margin-top: .9rem; } .cal-quick summary { cursor: pointer; font-weight: 600; }
+.cal-day-chip { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .6rem; border: 1px solid var(--line-strong); border-radius: 999px; font-size: .82rem; background: #fff; cursor: pointer; }
+
+.cal-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); padding: .5rem; }
+.cal { display: grid; grid-template-columns: 3.6rem repeat(12, minmax(3.1rem, 1fr)); gap: 2px; min-width: 760px; user-select: none; -webkit-user-select: none; }
+.cal-dh { display: flex; flex-direction: column; align-items: center; gap: .05rem; font-size: .72rem; line-height: 1.2; padding: .2rem 0 .3rem; }
+.cal-dh b { font-size: .8rem; } .cal-dh span { color: var(--muted); }
+.cal-hl { display: flex; align-items: center; justify-content: flex-end; padding-right: .35rem; font-size: .72rem; color: var(--muted); }
+.cal-hbtn { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted; }
+.cal-copy { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: .95rem; line-height: 1; padding: 0; }
+.cal-copy:hover { color: var(--forest-800); }
+.cal-cell { height: 2.1rem; padding: 0; border: 1px solid var(--line); border-radius: 5px; background: #fff; font-size: .78rem; font-weight: 700; color: var(--ink); cursor: default; }
+.cal-edit .cal-cell { cursor: pointer; touch-action: manipulation; }
+.cal-edit .cal-cell:hover { outline: 2px solid var(--forest-600); outline-offset: -2px; }
+.cal-cell.filled { background: var(--c); border-color: var(--c); }
+.cal-cell.gap { background: repeating-linear-gradient(45deg, #fde6e6, #fde6e6 4px, #f9cfcf 4px, #f9cfcf 8px); border-color: #eeaaaa; }
+.cal-cell.dim, .cal-hl.dim { opacity: .45; }
+.cal-cell.sel { outline: 2px solid var(--ink); outline-offset: -2px; }
+.cal-gapbadge, .cal-okbadge { font-size: .68rem; font-weight: 700; padding: 0 .4rem; border-radius: 999px; }
+.cal-gapbadge { background: var(--berry-100); color: var(--berry); } .cal-okbadge { background: var(--forest-100); color: var(--ok); }
+.cal-status { font-size: .85rem; color: var(--muted); display: inline-flex; align-items: center; gap: .4rem; }
+.cal-status.saved { color: var(--ok); } .cal-status.error { color: var(--berry); }
+.cal-work th, .cal-work td { text-align: center; padding: .35rem .3rem; font-size: .82rem; }
+.cal-work td:first-child, .cal-work th:first-child { text-align: left; min-width: 12rem; }
+.cal-work td.ok { background: #e3f4e8; } .cal-work td.low { background: #fde4e4; color: #8a1f1f; }
+.cal-stats { margin: 1rem 0; } .stat.bad b { color: var(--berry); }
+.gap-row { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; margin: .3rem 0; }
+.detail-list { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .35rem; }

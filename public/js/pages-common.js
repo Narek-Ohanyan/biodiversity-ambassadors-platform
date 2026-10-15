@@ -4,6 +4,7 @@ import { html, actions, openModal, localName, fmtDateTime, toast, errText } from
 import * as api from './api.js';
 import { state } from './api.js';
 import { navigate } from './router.js';
+import { teamName } from './teams.js';
 
 const activityName = (key) => localName(state.config?.activities?.find((a) => a.key === key)) || key;
 
@@ -23,6 +24,10 @@ export function notifText(n) {
       return { icon: 'ℹ️', title: t('n.webinar_excused_title'), body: t('n.webinar_excused_body'), href: '/app/learning' };
     case 'role_removed':
       return { icon: 'ℹ️', title: t('n.role_removed_title'), body: t('n.role_removed_body'), href: '/app/roles' };
+    case 'role_approved':
+      return { icon: '✅', title: t('n.role_approved_title'), body: t('n.role_approved_body', { role: teamName(p.role) }), href: '/app/schedule' };
+    case 'role_rejected':
+      return { icon: '⚠️', title: t('n.role_rejected_title'), body: t('n.role_rejected_body', { role: teamName(p.role) }), href: '/app/roles' };
     case 'qualified':
       return { icon: '🎉', title: t('n.qualified_title'), body: t('n.qualified_body'), href: '/app/profile' };
     case 'claim_submitted':
