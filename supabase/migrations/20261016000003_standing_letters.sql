@@ -128,3 +128,4 @@ begin
         order by l.serial desc), '[]')
       from public.standing_letters l join public.accounts a on a.id = l.user_id left join public.profiles p on p.user_id = l.user_id));
 end $$;
+

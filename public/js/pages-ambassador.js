@@ -538,9 +538,9 @@ export async function lettersView() {
         <form data-form="letter" novalidate>
           <div class="field"><label>${t('let.lang')} *</label><div class="chips" id="lt-langs">
             ${['hy', 'en', 'both'].map((l, i) => html`<label class="cal-day-chip"><input type="radio" name="lang" value="${l}" ${i === 0 ? raw('checked') : ''}> <span>${t(`let.lang_${l}`)}</span></label>`)}</div></div>
-          <div id="lt-hy"><div class="grid-2">${field('first_name_hy', t('let.first_hy'), pr.first_name_hy || '')}${field('last_name_hy', t('let.last_hy'), pr.last_name_hy || '')}</div>
+          <div id="lt-hy"><div class="grid-2">${field('first_name_hy', t('let.first_hy'), pr.first_name_hy || '', pr.first_name_hy ? 'readonly' : '')}${field('last_name_hy', t('let.last_hy'), pr.last_name_hy || '', pr.last_name_hy ? 'readonly' : '')}</div>
             ${field('patronymic_hy', t('let.patr_hy'))}</div>
-          <div id="lt-en" hidden><div class="grid-2">${field('first_name_en', t('let.first_en'), pr.first_name_en || '')}${field('last_name_en', t('let.last_en'), pr.last_name_en || '')}</div>
+          <div id="lt-en" hidden><div class="grid-2">${field('first_name_en', t('let.first_en'), pr.first_name_en || '', pr.first_name_en ? 'readonly' : '')}${field('last_name_en', t('let.last_en'), pr.last_name_en || '', pr.last_name_en ? 'readonly' : '')}</div>
             <p class="muted small" style="margin:-.3rem 0 .8rem">${t('let.en_note')}</p></div>
           <div class="grid-2"><div class="field"><label for="lt-pn">${t('let.passport_number')} *</label><input id="lt-pn" name="passport_number" type="text" maxlength="20" required></div>
             <div class="field"><label for="lt-pon">${t('let.issued_on')} *</label><input id="lt-pon" name="passport_issued_on" type="date" min="1990-01-01" max="${new Date().toISOString().slice(0, 10)}" required></div></div>
