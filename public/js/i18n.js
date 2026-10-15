@@ -82,6 +82,7 @@ const DICT = {
 
     'amb.eyebrow': 'Certified', 'amb.lead': 'Students who completed the qualification process and earned the official title of Biodiversity Ambassador.', 'amb.search': 'Search by name or faculty…',
     'mgr.qr': 'QR codes', 'qr.intro': 'One QR code per ambassador for their nametag. Scanning it opens that ambassador\'s own page on the site (it shows once they are published). Download a single code, or all of them as a ZIP; SVG is best for print.', 'qr.all_png': 'All QR codes (PNG, ZIP)', 'qr.all_svg': 'All QR codes (SVG, ZIP)', 'qr.csv': 'Names and links (CSV)', 'qr.live': 'Page is live', 'qr.not_live': 'Not published yet', 'qr.live_only': 'Published only', 'qr.open': 'Open page', 'amb.page_missing': 'This ambassador page is not available yet. Profiles appear here once the ambassador has qualified.',
+    'reg.banner': 'Registration is closed. The programme is no longer accepting new participants.', 'reg.closed_title': 'Registration is closed', 'reg.closed_text': 'The programme is no longer accepting new participants, and no one else can qualify as an ambassador. If you already have an account, sign in.', 'err.registration_closed': 'Registration is closed: new accounts can no longer be created.',
     'amb.all_universities': 'All universities', 'amb.count': '{n} ambassadors', 'amb.empty_title': 'The first ambassadors are on their way.',
     'amb.empty_text': 'Profiles appear here automatically as soon as a candidate earns all 60 credits.',
     'contact.eyebrow': 'Get in touch', 'contact.title': 'We’d love to hear from you', 'contact.text': 'Questions about the program, the credits or the platform? Write to us.',
@@ -103,7 +104,7 @@ const DICT = {
     'account.title': 'Account', 'account.email': 'Email', 'account.change_password': 'Change password',
 
     'learn.requirements': 'Requirements to become a Biodiversity Ambassador', 'learn.requirements_text': 'Earn 40 core, 10 elective and 10 soft-skills credits, and attend the mandatory webinar. Striped bars show credits waiting for approval. When a category is complete, it closes.',
-    'learn.deadline_banner': 'Deadline to complete your credits: {date}.', 'learn.closed_banner': 'The claim period has closed. You can no longer submit new claims.',
+    'learn.deadline_banner': 'Deadline to complete your credits: {date}.', 'learn.closed_banner': 'The programme is closed. New claims can no longer be submitted and no one else can qualify.',
     'learn.qualified': 'Congratulations, you are a Biodiversity Ambassador!', 'learn.qualified_text': 'Your profile now appears on the public Ambassadors page.',
     'learn.credits': 'credits', 'learn.pending_short': 'pending', 'learn.cat_complete': 'Requirement met', 'learn.cat_full_short': 'Awaiting approval',
     'learn.cat_closed': 'This requirement is met — no more credits needed here.', 'learn.cat_full': 'Your pending claims already cover this requirement.', 'learn.locked': 'Claim period closed.',
@@ -266,6 +267,7 @@ const DICT = {
 
     'amb.eyebrow': 'Հավաստագրված', 'amb.lead': 'Ուսանողներ, ովքեր հաջողությամբ ավարտել են որակավորման գործընթացը և ստացել «Կենսաբազմազանության դեսպան» պաշտոնական կոչումը։', 'amb.search': 'Որոնել ըստ անվան կամ ֆակուլտետի…',
     'mgr.qr': 'QR կոդեր', 'qr.intro': 'Յուրաքանչյուր դեսպանի համար՝ մեկական QR կոդ նրա անվանաքարտի համար։ Սկանավորելիս բացվում է այդ դեսպանի անձնական էջը կայքում (այն երևում է հրապարակվելուց հետո)։ Կարող եք ներբեռնել առանձին կոդ կամ բոլորը՝ ZIP-ով. տպագրության համար լավագույնը SVG-ն է։', 'qr.all_png': 'Բոլոր QR կոդերը (PNG, ZIP)', 'qr.all_svg': 'Բոլոր QR կոդերը (SVG, ZIP)', 'qr.csv': 'Անուններ և հղումներ (CSV)', 'qr.live': 'Էջը հասանելի է', 'qr.not_live': 'Դեռ չի հրապարակվել', 'qr.live_only': 'Միայն հրապարակվածները', 'qr.open': 'Բացել էջը', 'amb.page_missing': 'Այս դեսպանի էջը դեռ հասանելի չէ։ Պրոֆիլները այստեղ երևում են դեսպանի որակավորվելուց հետո։',
+    'reg.banner': 'Գրանցումը փակ է։ Ծրագիրն այլևս նոր մասնակիցներ չի ընդունում։', 'reg.closed_title': 'Գրանցումը փակ է', 'reg.closed_text': 'Ծրագիրն այլևս նոր մասնակիցներ չի ընդունում, և ոչ ոք այլևս չի կարող որակավորվել որպես դեսպան։ Եթե արդեն ունեք հաշիվ, մուտք գործեք։', 'err.registration_closed': 'Գրանցումը փակ է. նոր հաշիվներ այլևս չեն ստեղծվում։',
     'amb.all_universities': 'Բոլոր համալսարանները', 'amb.count': '{n} դեսպան', 'amb.empty_title': 'Առաջին դեսպանները շուտով կհայտնվեն։',
     'amb.empty_text': 'Պրոֆիլները այստեղ կհայտնվեն ավտոմատ կերպով, հենց թեկնածուն հավաքի բոլոր 60 կրեդիտը։',
     'contact.eyebrow': 'Կապ մեզ հետ', 'contact.title': 'Սիրով կլսենք ձեզ', 'contact.text': 'Հարցեր ունե՞ք ծրագրի, կրեդիտների կամ հարթակի վերաբերյալ։ Գրեք մեզ։',
@@ -287,7 +289,7 @@ const DICT = {
     'account.title': 'Հաշիվ', 'account.email': 'Էլ. հասցե', 'account.change_password': 'Փոխել գաղտնաբառը',
 
     'learn.requirements': 'Կենսաբազմազանության դեսպան դառնալու պահանջները', 'learn.requirements_text': 'Հավաքեք 40 հիմնական, 10 ընտրովի և 10 փափուկ հմտությունների կրեդիտ և մասնակցեք պարտադիր վեբինարին։ Գծավոր հատվածները հաստատման սպասող կրեդիտներն են։ Երբ կատեգորիան լրանում է, այն փակվում է։',
-    'learn.deadline_banner': 'Կրեդիտների հավաքագրման վերջնաժամկետ՝ {date}։', 'learn.closed_banner': 'Հայտերի ընդունման ժամկետն ավարտվել է։ Նոր հայտեր այլևս հնարավոր չէ ներկայացնել։',
+    'learn.deadline_banner': 'Կրեդիտների հավաքագրման վերջնաժամկետ՝ {date}։', 'learn.closed_banner': 'Ծրագիրը փակ է։ Նոր հայտեր այլևս հնարավոր չէ ներկայացնել, և ոչ ոք այլևս չի կարող որակավորվել։',
     'learn.qualified': 'Շնորհավորում ենք, դուք Կենսաբազմազանության դեսպան եք։', 'learn.qualified_text': 'Ձեր պրոֆիլն այժմ երևում է «Դեսպաններ» էջում։',
     'learn.credits': 'կրեդիտ', 'learn.pending_short': 'սպասման մեջ', 'learn.cat_complete': 'Պահանջը կատարված է', 'learn.cat_full_short': 'Սպասում է հաստատման',
     'learn.cat_closed': 'Այս պահանջը կատարված է՝ այլևս կրեդիտ պետք չէ։', 'learn.cat_full': 'Ձեր սպասման մեջ գտնվող հայտերն արդեն ծածկում են այս պահանջը։', 'learn.locked': 'Հայտերի ընդունման ժամկետն ավարտվել է։',

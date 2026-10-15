@@ -27,6 +27,7 @@ export async function homeView() {
   const [m, ambassadors] = await Promise.all([manifest(), api.publicAmbassadors().catch(() => [])]);
   const slides = m.carousel || [];
   const cfg = state.config;
+  const closed = !!cfg?.registrationClosed;
   const cats = ['core', 'elective', 'soft'];
   return {
     html: html`
@@ -39,7 +40,7 @@ export async function homeView() {
         <h1>${t('home.title')}</h1>
         <p class="lead">${t('home.lead')}</p>
         <div class="row" style="margin-top:1.6rem">
-          <a class="btn accent lg" href="/platform" data-link>${t('home.cta_join')}</a>
+          <a class="btn accent lg" href="/platform" data-link>${closed ? t('auth.signin') : t('home.cta_join')}</a>
           <a class="btn secondary lg" style="color:#fff;border-color:rgba(255,255,255,.55)" href="/ambassadors" data-link>${t('home.cta_ambassadors')}</a>
         </div>
       </div></div>
@@ -57,16 +58,17 @@ export async function homeView() {
     <section class="section"><div class="container cols-2" style="align-items:center">
       <div><p class="eyebrow">${t('home.about_eyebrow')}</p><h2>${t('home.about_title')}</h2><p>${CONTENT.intro[lang()]}</p>
         <a class="btn secondary" href="/about" data-link>${t('home.read_more')}</a></div>
-      <div class="card"><h3>${t('home.deadline_title')}</h3>
+      <div class="card">${closed ? html`<h3>${t('reg.closed_title')}</h3><p class="muted">${t('reg.closed_text')}</p>`
+        : html`<h3>${t('home.deadline_title')}</h3>
         <p class="muted">${t('home.deadline_text')}</p>
-        <p style="font:700 2rem var(--font-head);margin:0;color:var(--apricot-dark)">${fmtDate(`${cfg?.displayDeadline || '2026-10-12'}T12:00:00+04:00`, { dateStyle: 'long' })}</p></div>
+        <p style="font:700 2rem var(--font-head);margin:0;color:var(--apricot-dark)">${fmtDate(`${cfg?.displayDeadline || '2026-10-12'}T12:00:00+04:00`, { dateStyle: 'long' })}</p>`}</div>
     </div></section>
     <section class="section tint"><div class="container">
       <div class="section-head"><p class="eyebrow">${t('home.path_eyebrow')}</p><h2>${t('home.path_title')}</h2><p class="muted">${t('home.path_text')}</p></div>
       <div class="cols-3">${cats.map((c) => html`<div class="card credit-card ${c}">
         <div class="big">${cfg?.categories?.[c]?.required ?? ({ core: 40, elective: 10, soft: 10 })[c]}</div>
         <h3>${t(`cat.${c}`)}</h3><p class="muted">${t(`home.cat_${c}`)}</p></div>`)}</div>
-      <div class="row" style="margin-top:2rem"><a class="btn" href="/platform" data-link>${t('home.cta_join')}</a><span class="muted small">${t('home.total_note')}</span></div>
+      <div class="row" style="margin-top:2rem">${closed ? '' : html`<a class="btn" href="/platform" data-link>${t('home.cta_join')}</a>`}<span class="muted small">${t('home.total_note')}</span></div>
     </div></section>`,
     mount(root) { initCarousel(root); },
   };
@@ -138,10 +140,12 @@ function authCard(mode) {
         <button class="btn" type="submit">${t('auth.send_link')}</button>
         <button class="btn ghost" type="button" data-act="auth-tab" data-tab="signin">${t('auth.back_signin')}</button></form></div>`;
   }
-  const signin = mode !== 'signup';
+  const closed = !!state.config?.registrationClosed; // no new accounts: sign-in only
+  const signin = closed || mode !== 'signup';
   return html`<div class="card">
-    <div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="${String(signin)}" data-act="auth-tab" data-tab="signin">${t('auth.signin')}</button>
-      <button role="tab" type="button" aria-selected="${String(!signin)}" data-act="auth-tab" data-tab="signup">${t('auth.signup')}</button></div>
+    ${closed ? html`<div class="banner bad" style="margin-bottom:1rem"><span>🔒</span><div><b>${t('reg.closed_title')}</b><br>${t('reg.closed_text')}</div></div>`
+      : html`<div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="${String(signin)}" data-act="auth-tab" data-tab="signin">${t('auth.signin')}</button>
+      <button role="tab" type="button" aria-selected="${String(!signin)}" data-act="auth-tab" data-tab="signup">${t('auth.signup')}</button></div>`}
     ${signin ? html`<form data-form="login" novalidate>
       <div class="field"><label for="l-email">${t('auth.email')}</label><input id="l-email" name="email" type="email" autocomplete="email" required></div>
       <div class="field"><label for="l-pw">${t('auth.password')}</label><input id="l-pw" name="password" type="password" autocomplete="current-password" required></div>
@@ -165,7 +169,7 @@ export function platformView() {
     <section class="section"><div class="container auth-wrap">
       <div><h2>${t('platform.title')}</h2><p>${t('platform.text')}</p>
         <ul class="feature-list">${feats.map(([ic, k]) => html`<li><span class="ic" aria-hidden="true">${ic}</span><div><b>${t(`platform.f_${k}`)}</b><div class="muted small">${t(`platform.f_${k}_text`)}</div></div></li>`)}</ul>
-        <p class="muted small" style="margin-top:1rem">${t('platform.deadline_note', { date: fmtDate(`${state.config?.displayDeadline || '2026-10-12'}T12:00:00+04:00`, { dateStyle: 'long' }) })}</p></div>
+        ${state.config?.registrationClosed ? '' : html`<p class="muted small" style="margin-top:1rem">${t('platform.deadline_note', { date: fmtDate(`${state.config?.displayDeadline || '2026-10-12'}T12:00:00+04:00`, { dateStyle: 'long' }) })}</p>`}</div>
       <div id="authcard">${authCard('signin')}</div>
     </div></section></div>`,
     mount(root) {
@@ -195,6 +199,7 @@ export function afterLogin() {
 
 forms.signup = async (form) => {
   const btn = form.querySelector('[type=submit]');
+  if (state.config?.registrationClosed) return formMsg(form, t('err.registration_closed'));
   const { email, password, password2 } = Object.fromEntries(new FormData(form));
   if (!email || !password) return formMsg(form, t('err.required'));
   if (password.length < 8) return formMsg(form, t('err.weak_password'));
@@ -206,7 +211,7 @@ forms.signup = async (form) => {
     // Supabase hides whether an address is already registered: an empty identities list means it is.
     if (data.user && data.user.identities && data.user.identities.length === 0) throw new Error('already registered');
     form.innerHTML = html`<div class="form-ok" role="status"><b>${t('auth.check_email_title')}</b><br>${t('auth.check_email_text', { email: email.trim() })}</div>`.s;
-  } catch (e) { formMsg(form, errText(e)); setBusy(btn, false); }
+  } catch (e) { formMsg(form, /registration_closed|Database error saving new user/i.test(String(e?.message)) ? t('err.registration_closed') : errText(e)); setBusy(btn, false); }
 };
 
 forms.forgot = async (form) => {
@@ -270,7 +275,7 @@ export async function ambassadorsView() {
     ? html`<div class="amb-grid">${items.map((a) => html`<button type="button" class="amb-card" data-act="amb-open" data-id="${a.id}">
         ${a.photo_path ? html`<img class="photo" style="${photoPos(a)}" src="${api.photoUrl(a.photo_path)}" alt="${personName(a)}" loading="lazy">` : html`<div class="photo avatar" style="border-radius:0">${initials(personFirst(a), personLast(a))}</div>`}
         <div class="body"><h3>${personName(a)}</h3><div class="small">${localUniversity(a.university)}</div><div class="small muted">${personFaculty(a)}</div></div></button>`)}</div>`
-    : html`<div class="empty"><p style="font:700 1.3rem var(--font-head);color:var(--forest-900)">${failed ? t('err.generic') : t('amb.empty_title')}</p><p>${t('amb.empty_text')}</p><a class="btn" href="/platform" data-link>${t('home.cta_join')}</a></div>`);
+    : html`<div class="empty"><p style="font:700 1.3rem var(--font-head);color:var(--forest-900)">${failed ? t('err.generic') : t('amb.empty_title')}</p><p>${t('amb.empty_text')}</p>${state.config?.registrationClosed ? '' : html`<a class="btn" href="/platform" data-link>${t('home.cta_join')}</a>`}</div>`);
   return {
     html: html`<div class="page-title"><div class="container"><p class="eyebrow">${t('amb.eyebrow')}</p><h1>${t('nav.ambassadors')}</h1>
       <p class="muted" style="max-width:640px;margin:.6rem 0 0">${t('amb.lead')}</p></div></div>

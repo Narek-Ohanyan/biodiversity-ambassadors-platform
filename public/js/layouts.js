@@ -21,6 +21,7 @@ export function publicShell(content, path) {
       <div class="header-actions">${langSwitch()}
         ${state.user ? html`<a class="btn sm" href="${dest}" data-link>${t('nav.dashboard')}</a>` : html`<a class="btn sm hide-sm" href="/platform" data-link>${t('auth.signin')}</a>`}
         <button class="icon-btn menu-toggle" type="button" data-act="menu-toggle" aria-label="Menu" aria-controls="main-nav" aria-expanded="false">☰</button></div></div></header>
+    ${state.config?.registrationClosed ? html`<div class="notice-bar" role="status"><div class="container">🔒 ${t('reg.banner')}</div></div>` : ''}
     <main id="main">${content}</main>
     <footer class="site-footer"><div class="container footer-grid">
       <div><div class="brand" style="color:#fff">${logo}<span>${BRAND_NAME}<small style="color:#9ab8a9">${BRAND_SUB}</small></span></div>

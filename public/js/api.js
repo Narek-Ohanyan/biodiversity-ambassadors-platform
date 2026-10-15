@@ -33,6 +33,7 @@ export async function loadConfig(force = false) {
     activities: unwrap(acts).map((a) => ({ ...a, ...ACTIVITY_TEXT[a.key] })),
     displayDeadline: s.display_deadline,
     systemDeadline: s.system_deadline,
+    registrationClosed: s.registration_closed === 'true',
     modules: [],
   };
   return state.config;

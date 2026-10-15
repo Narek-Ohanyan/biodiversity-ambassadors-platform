@@ -263,3 +263,6 @@ th { background: var(--forest-50); font-size: .76rem; text-transform: uppercase;
 .qr-card .qr-img { flex: none; width: 120px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: #fff; }
 .qr-card .qr-img svg { display: block; width: 100%; height: auto; }
 .qr-card .qr-meta { min-width: 0; }
+
+/* Site-wide notice under the header (e.g. registration closed) */
+.notice-bar { background: #fbeadf; color: #6b2d12; border-bottom: 1px solid #efc9b0; font-size: .92rem; font-weight: 600; text-align: center; padding: .55rem 0; }
