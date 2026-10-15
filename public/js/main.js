@@ -8,7 +8,7 @@ import { publicShell, ambassadorShell, managerShell } from './layouts.js';
 import * as pub from './pages-public.js';
 import * as amb from './pages-ambassador.js';
 import * as mgr from './pages-manager.js';
-import { notificationsView, updateBadges, checkPopups } from './pages-common.js';
+import { notificationsView, updateBadges, checkPopups, askBlueZone } from './pages-common.js';
 
 const app = document.getElementById('app');
 let renderToken = 0;
@@ -93,7 +93,7 @@ async function route() {
   window.scrollTo(0, 0);
   view.mount?.(app);
   updateBadges();
-  if (state.user) checkPopups();
+  if (state.user) (def.role === 'ambassador' ? askBlueZone() : Promise.resolve()).then(() => checkPopups());
 }
 
 // ── global actions ──────────────────────────────────────────────────────────

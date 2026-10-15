@@ -295,6 +295,7 @@ export async function qrView() {
 }
 
 // ── Roles: applications per team, approval, individual schedules ───────────
+const bzChip = (v) => (v === true ? html`<span class="chip ok">${t('bz.answer_yes')}</span>` : v === false ? html`<span class="chip bad">${t('bz.answer_no')}</span>` : html`<span class="chip neutral">${t('bz.answer_none')}</span>`);
 const roleStatusChip = (st) => (st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>` : st === 'rejected' ? html`<span class="chip bad">${t('roles.st_rejected')}</span>` : html`<span class="chip pending">${t('roles.st_pending')}</span>`);
 
 let shiftCache = null;
@@ -313,7 +314,7 @@ function personCalendar(uid, rows, roleCfg) {
 }
 
 export async function rolesView() {
-  let d = await api.mgr.roles();
+  let [d, bzList] = await Promise.all([api.mgr.roles(), api.mgr.blueZone()]);
   const openSet = new Set(d.roles.filter((r) => r.pending > 0).map((r) => r.role));
   const cfgMap = () => Object.fromEntries(d.roles.map((r) => [r.role, r]));
   const person = (r) => fullName(r) || r.email;
@@ -327,9 +328,10 @@ export async function rolesView() {
         ${cfg.min_hours ? html`<span class="chip neutral">⏱ ${t('roles.min_hours', { n: cfg.min_hours })}</span>` : ''}</summary>
       <div class="row" style="margin:.8rem 0"><button class="btn secondary sm" type="button" data-act="roles-copy" data-role="${cfg.role}" ${rows.length ? '' : raw('disabled')}>${t('roles.copy_emails')}</button>
         <button class="btn secondary sm" type="button" data-act="roles-csv" data-role="${cfg.role}" ${rows.length ? '' : raw('disabled')}>⬇ ${t('roles.export')}</button></div>
-      ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('profile.university')}</th><th>${t('mgr.status')}</th>${cfg.needs_recording ? html`<th>${t('roles.recording_done')}</th>` : ''}<th>${t('cal.hours')}</th><th>${t('roles.signed_at')}</th><th></th></tr></thead><tbody>
+      ${rows.length ? html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('profile.university')}</th><th>${t('mgr.status')}</th>${cfg.role === 'rapporteur' ? html`<th>${t('bz.col')}</th>` : ''}${cfg.needs_recording ? html`<th>${t('roles.recording_done')}</th>` : ''}<th>${t('cal.hours')}</th><th>${t('roles.signed_at')}</th><th></th></tr></thead><tbody>
         ${rows.map((r) => html`<tr><td><b>${person(r)}</b>${r.qualified ? '' : html` <span class="chip bad">${t('roles.not_qualified')}</span>`}<div class="small muted">${r.email}</div></td>
           <td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td>${roleStatusChip(r.status)}</td>
+          ${cfg.role === 'rapporteur' ? html`<td>${bzChip(r.blue_zone)}</td>` : ''}
           ${cfg.needs_recording ? html`<td>${r.watched ? html`<span class="chip ok">✓ ${t('roles.watched')}</span>` : html`<span class="chip neutral">${t('roles.not_watched')}</span>`}</td>` : ''}
           <td>${r.hours || '—'}</td><td class="small">${fmtDateTime(r.created_at)}</td>
           <td><div class="row" style="flex-wrap:nowrap;gap:.3rem">
@@ -340,16 +342,42 @@ export async function rolesView() {
             <button class="btn ghost sm danger" type="button" data-act="roles-remove" data-id="${r.id}" data-role="${cfg.role}">${t('roles.remove')}</button></div></td></tr>`)}</tbody></table></div>`
         : html`<div class="empty">${t('roles.none')}</div>`}</details>`;
   };
+  let bzFilter = '';
+  const bzPanel = () => {
+    const yes = bzList.filter((r) => r.has_access === true).length, no = bzList.filter((r) => r.has_access === false).length, none = bzList.length - yes - no;
+    const rows = bzList.filter((r) => !bzFilter || (bzFilter === 'yes' ? r.has_access === true : bzFilter === 'no' ? r.has_access === false : r.has_access === null));
+    return html`<details class="card team-sec" style="--c:#1a7f8e" ${bzOpen ? raw('open') : ''} id="bz-details"><summary><span class="dot big"></span><b>${t('mgr.bz_title')}</b>
+        <span class="chip ok">${t('bz.answer_yes')}: ${yes}</span><span class="chip bad">${t('bz.answer_no')}: ${no}</span><span class="chip neutral">${t('bz.answer_none')}: ${none}</span></summary>
+      <p class="muted small" style="margin:.6rem 0">${t('mgr.bz_note')}</p>
+      <div class="toolbar"><select id="bz-filter" aria-label="${t('mgr.status')}"><option value="">${t('mgr.bz_all')}</option><option value="yes" ${bzFilter === 'yes' ? raw('selected') : ''}>${t('bz.answer_yes')}</option><option value="no" ${bzFilter === 'no' ? raw('selected') : ''}>${t('bz.answer_no')}</option><option value="none" ${bzFilter === 'none' ? raw('selected') : ''}>${t('bz.answer_none')}</option></select>
+        <button class="btn secondary sm" type="button" data-act="bz-csv">⬇ ${t('mgr.export')}</button></div>
+      <div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('profile.university')}</th><th>${t('bz.col')}</th><th>${t('mgr.bz_team')}</th><th>${t('mgr.bz_answered')}</th></tr></thead><tbody>
+        ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b><div class="small muted">${r.email}</div></td><td class="small">${r.university ? localUniversity(r.university) : '—'}</td><td>${bzChip(r.has_access)}</td>
+          <td>${r.status ? roleStatusChip(r.status) : (r.has_access && !r.qualified ? html`<span class="chip neutral">${t('roles.not_qualified')}</span>` : '—')}</td><td class="small">${r.answered_at ? fmtDateTime(r.answered_at) : '—'}</td></tr>`)}</tbody></table></div></details>`;
+  };
+  let bzOpen = false;
   return {
     html: html`<div class="main-head"><h1>${t('mgr.roles')}</h1><div class="grow"></div><a class="btn secondary" href="/manager/schedule" data-link>📅 ${t('mgr.schedule')}</a>
         <button class="btn secondary" type="button" data-act="roles-csv" data-role="*">⬇ ${t('roles.export_all')}</button></div>
       <p class="muted" style="max-width:760px">${t('mgr.roles_intro')}</p>
+      <div id="bz-panel">${bzPanel()}</div>
       <div class="team-list" id="team-secs">${d.roles.map(section)}</div>`,
     mount(root) {
+      const bzBox = root.querySelector('#bz-panel');
+      const drawBz = () => { bzBox.innerHTML = bzPanel().s; };
+      bzBox.addEventListener('toggle', (e) => { if (e.target.id === 'bz-details') bzOpen = e.target.open; }, true);
+      bzBox.addEventListener('change', (e) => { if (e.target.id === 'bz-filter') { bzFilter = e.target.value; bzOpen = true; drawBz(); } });
+      actions['bz-csv'] = () => {
+        const head = ['email', 'first_name', 'last_name', 'university', 'blue_zone_access', 'answered_at', 'blue_zones_team_status', 'qualified'];
+        const body = bzList.map((r) => [r.email, r.first_name, r.last_name, r.university, r.has_access === true ? 'yes' : r.has_access === false ? 'no' : '', r.answered_at, r.status, r.qualified ? 'yes' : 'no'].map(csvCell).join(','));
+        const blob = new Blob(['\ufeff' + [head.join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob); const link = document.createElement('a');
+        link.href = url; link.download = `blue-zone-access-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url);
+      };
       const box = root.querySelector('#team-secs');
       const draw = () => { box.innerHTML = d.roles.map((c) => section(c).s).join(''); };
       box.addEventListener('toggle', (e) => { const k = e.target.dataset?.role; if (k) (e.target.open ? openSet.add(k) : openSet.delete(k)); }, true);
-      const reload = async () => { d = await api.mgr.roles(); draw(); };
+      const reload = async () => { [d, bzList] = await Promise.all([api.mgr.roles(), api.mgr.blueZone()]); draw(); drawBz(); };
       actions['roles-decide'] = async (el) => {
         setBusy(el, true, t('common.wait'));
         try { await api.mgr.decideRole(el.dataset.id, el.dataset.role, el.dataset.status); toast(t('mgr.role_updated')); shiftCache = null; await reload(); }

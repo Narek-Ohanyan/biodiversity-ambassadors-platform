@@ -8,6 +8,7 @@ import { navigate } from './router.js';
 import { MEDIA_BASE } from './config.js';
 import { CONTENT } from './content.js';
 import { formMsg, localUniversity } from './pages-public.js';
+import { askBlueZone } from './pages-common.js';
 import { TEAMS, TEAM_ORDER, EVENT_DAYS, HOURS, FIRST_HOUR, LAST_HOUR, dayParts, hourLabel, teamName, teamColor } from './teams.js';
 import { calGrid, bindPaint, slotKey, workloadHtml, legendHtml } from './calendar.js';
 
@@ -324,7 +325,7 @@ function roleBlocks(blocks) {
 
 const FULL_DAYS = () => (getLang() === 'hy' ? '19–30 հոկտեմբերի' : '19–30 October');
 
-function teamCard(key, r) {
+function teamCard(key, r, bz) {
   const L = getLang(), tm = TEAMS[key];
   const st = r.status; // null | pending | approved | rejected
   const chip = st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>`
@@ -351,6 +352,7 @@ function teamCard(key, r) {
       ${tm.note[L] ? html`<span class="chip neutral">📍 ${tm.note[L]}</span>` : ''}</div>
     <ul class="team-tasks">${tm.tasks[L].map((x) => html`<li>${x}</li>`)}</ul>
     ${tm.extra ? tm.extra[L].map((x) => html`<p class="muted small" style="margin:.4rem 0">${x}</p>`) : ''}
+    ${key === 'rapporteur' && bz?.answered ? html`<p class="small" style="margin:.6rem 0">🔵 ${t('bz.your_answer')}: <b>${bz.has_access ? t('bz.answer_yes') : t('bz.answer_no')}</b> <button class="link-btn" type="button" data-act="bz-change">${t('bz.change')}</button></p>` : ''}
     ${recording}
     <div class="row" style="margin-top:1rem">
       ${!st ? html`<button class="btn" type="button" data-act="role-signup" data-role="${key}" ${canApply ? '' : raw('disabled')}>${t('roles.apply')}</button>` : ''}
@@ -361,9 +363,9 @@ function teamCard(key, r) {
 }
 
 export async function rolesView() {
-  let roles = await api.myRoles();
+  let [roles, bz] = await Promise.all([api.myRoles(), api.myBlueZone().catch(() => null)]);
   const L = getLang(), c = CONTENT.rapporteur;
-  const list = () => TEAM_ORDER.filter((k) => roles[k]).map((k) => teamCard(k, roles[k]));
+  const list = () => TEAM_ORDER.filter((k) => roles[k]).map((k) => teamCard(k, roles[k], bz));
   return {
     html: html`<div class="main-head"><h1>${t('roles.title')}</h1><div class="grow"></div><a class="btn secondary" href="/app/schedule" data-link>📅 ${t('nav.schedule')}</a></div>
       <p class="muted" style="max-width:760px">${t('roles.intro')}</p>
@@ -373,6 +375,7 @@ export async function rolesView() {
     mount(root) {
       const slot = root.querySelector('#role-slot');
       const redraw = () => { slot.innerHTML = list().map((x) => x.s).join(''); };
+      actions['bz-change'] = async () => { await askBlueZone({ force: true }); bz = await api.myBlueZone().catch(() => bz); roles = await api.myRoles(); redraw(); };
       actions['role-signup'] = async (el) => {
         setBusy(el, true, t('common.wait'));
         try { roles = await api.signupRole(el.dataset.role); toast(t('roles.signed_ok')); redraw(); }

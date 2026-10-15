@@ -73,8 +73,42 @@ export function updateBadges() {
 
 // Announcements and milestone messages appear as a pop-up on whatever page the ambassador is on.
 let popupBusy = false;
+// Mandatory question for ambassadors, shown on every platform page until it is answered (the dialog cannot be
+// dismissed). `force` re-opens it, dismissibly, so an ambassador can change their answer from the Roles page.
+export async function askBlueZone({ force = false } = {}) {
+  if (state.bzOpen || state.account?.role !== 'ambassador') return;
+  if (!force && state.bzFor === state.user?.id) return;
+  let current;
+  try { current = await api.myBlueZone(); } catch { return; }
+  if (!force) { if (current.answered) { state.bzFor = state.user.id; return; } }
+  state.bzOpen = true;
+  await new Promise((resolve) => {
+    const m = openModal({
+      title: t('bz.title'), dismissible: force, onClose: resolve,
+      body: html`<p>${t('bz.text')}</p><p class="muted small">${t('bz.note')}</p><div class="form-msg form-error" id="bz-err" hidden></div>`,
+      footer: html`${force ? html`<button class="btn ghost" type="button" data-modal-close>${t('common.cancel')}</button>` : ''}
+        <button class="btn secondary" type="button" data-bz="0">${t('bz.no')}</button><button class="btn" type="button" data-bz="1">${t('bz.yes')}</button>`,
+    });
+    m.el.querySelectorAll('[data-bz]').forEach((b) => b.addEventListener('click', async () => {
+      const yes = b.dataset.bz === '1';
+      m.el.querySelectorAll('[data-bz]').forEach((x) => { x.disabled = true; });
+      try {
+        const r = await api.answerBlueZone(yes);
+        state.bzFor = state.user.id;
+        m.close();
+        toast(yes ? (r.approved ? t('bz.thanks_yes_approved') : t('bz.thanks_yes')) : t('bz.thanks_no'));
+        if (yes) navigate(location.pathname);
+      } catch (e) {
+        m.el.querySelectorAll('[data-bz]').forEach((x) => { x.disabled = false; });
+        const box = m.el.querySelector('#bz-err'); box.textContent = errText(e); box.hidden = false;
+      }
+    }));
+  });
+  state.bzOpen = false;
+}
+
 export async function checkPopups() {
-  if (popupBusy || !state.user) return;
+  if (popupBusy || state.bzOpen || !state.user) return;
   let list;
   try { list = await api.pendingPopups(); } catch { return; }
   if (!list.length) return;

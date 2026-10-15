@@ -117,6 +117,8 @@ export const webinarConfirmRecording = () => sb.rpc('webinar_confirm_recording')
 export const myRoles = () => sb.rpc('my_roles').then(unwrap);
 export const signupRole = (role) => sb.rpc('signup_role', { p_role: role }).then(unwrap);
 export const cancelRole = (role) => sb.rpc('cancel_role', { p_role: role }).then(unwrap);
+export const myBlueZone = () => sb.rpc('my_blue_zone').then(unwrap);
+export const answerBlueZone = (hasAccess) => sb.rpc('answer_blue_zone', { p_has_access: hasAccess }).then(unwrap);
 export const myShifts = () => sb.rpc('my_shifts').then(unwrap);
 export const setMyShifts = (changes) => sb.rpc('set_my_shifts', { p_changes: changes }).then(unwrap);
 export const roleOpenRecording = (role) => sb.rpc('role_open_recording', { p_role: role }).then(unwrap);
@@ -200,6 +202,7 @@ export const mgr = {
   removeRoleSignup: (userId, role) => sb.rpc('remove_role_signup', { p_user: userId, p_role: role }).then(unwrap),
   roleSignups: (role) => sb.rpc('manager_role_signups', { p_role: role }).then(unwrap),
   roles: () => sb.rpc('manager_roles').then(unwrap),
+  blueZone: () => sb.rpc('manager_blue_zone').then(unwrap),
   decideRole: (userId, role, status) => sb.rpc('decide_role_signup', { p_user: userId, p_role: role, p_status: status }).then(unwrap),
   shifts: () => sb.rpc('manager_shifts').then(unwrap),
   webinar: () => sb.rpc('manager_webinar').then(unwrap),
