@@ -332,8 +332,10 @@ function teamCard(key, r, bz) {
   const chip = st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>`
     : st === 'pending' ? html`<span class="chip pending">${t('roles.st_pending')}</span>`
     : st === 'rejected' ? html`<span class="chip bad">${t('roles.st_rejected')}</span>`
+    : full ? html`<span class="chip bad">${t('roles.full')}</span>`
     : !r.eligible ? html`<span class="chip neutral">🔒 ${t('roles.qualified_only')}</span>` : '';
-  const canApply = !st && r.open && r.eligible;
+  const full = !!r.capacity && r.approved >= r.capacity;
+  const canApply = !st && r.open && r.eligible && !full;
   const cap = r.capacity ? `${r.approved}/${r.capacity}` : `${r.approved}/${t('roles.tbd')}`;
   const needsRec = r.needs_recording && r.signed_up && !r.recording_watched;
   const recording = !r.needs_recording || !r.signed_up || !r.recording_url ? '' : html`<div class="activity" style="margin:1rem 0">
@@ -343,7 +345,7 @@ function teamCard(key, r, bz) {
       <div class="row"><a class="btn ${needsRec && !r.recording_opened ? '' : 'secondary'}" data-rec-open data-role="${key}" href="${safeUrl(r.recording_url)}" target="_blank" rel="noopener noreferrer">${t('roles.recording_watch')} ↗</a>
         ${needsRec ? html`<button class="btn" type="button" data-act="role-rec-confirm" data-role="${key}" ${r.recording_opened ? '' : raw('disabled')}>${t('roles.recording_confirm')}</button>` : ''}</div></div>`;
   const note = st === 'approved' ? t('roles.note_approved') : st === 'pending' ? t('roles.note_pending') : st === 'rejected' ? t('roles.note_rejected')
-    : !r.eligible ? t('roles.not_eligible_note') : t('roles.note_apply');
+    : full ? t('roles.note_full') : !r.eligible ? t('roles.not_eligible_note') : t('roles.note_apply');
   return html`<div class="card team-card" style="--c:${tm.color}"><div class="row" style="align-items:center;gap:.6rem"><span class="dot big"></span><h2 style="margin:0;font-size:1.3rem">${tm.name[L]}</h2>${chip}</div>
     <div class="chips" style="margin:.7rem 0">
       <span class="chip info">👥 ${t('roles.applied', { n: r.applied })}</span>
