@@ -329,12 +329,12 @@ const FULL_DAYS = () => (getLang() === 'hy' ? '19–30 հոկտեմբերի' : '
 function teamCard(key, r, bz) {
   const L = getLang(), tm = TEAMS[key];
   const st = r.status; // null | pending | approved | rejected
+  const full = !!r.capacity && r.approved >= r.capacity;
   const chip = st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>`
     : st === 'pending' ? html`<span class="chip pending">${t('roles.st_pending')}</span>`
     : st === 'rejected' ? html`<span class="chip bad">${t('roles.st_rejected')}</span>`
     : full ? html`<span class="chip bad">${t('roles.full')}</span>`
     : !r.eligible ? html`<span class="chip neutral">🔒 ${t('roles.qualified_only')}</span>` : '';
-  const full = !!r.capacity && r.approved >= r.capacity;
   const canApply = !st && r.open && r.eligible && !full;
   const cap = r.capacity ? `${r.approved}/${r.capacity}` : `${r.approved}/${t('roles.tbd')}`;
   const needsRec = r.needs_recording && r.signed_up && !r.recording_watched;
