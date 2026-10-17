@@ -46,7 +46,7 @@ function shell(navHtml, content, homeHref) {
 }
 
 export function ambassadorShell(content, path) {
-  return shell(html`${sideLink('/app/profile', '👤', t('nav.profile'), path)}${sideLink('/app/notifications', '🔔', t('nav.notifications'), path, 'notifications')}${sideLink('/app/learning', '🎓', t('nav.learning'), path)}${sideLink('/app/roles', '🙋', t('nav.roles'), path)}${sideLink('/app/schedule', '📅', t('nav.schedule'), path)}${sideLink('/app/letters', '📄', t('nav.letters'), path)}`, content, '/app');
+  return shell(html`${sideLink('/app/profile', '👤', t('nav.profile'), path)}${sideLink('/app/notifications', '🔔', t('nav.notifications'), path, 'notifications')}${sideLink('/app/learning', '🎓', t('nav.learning'), path)}${sideLink('/app/roles', '🙋', t('nav.roles'), path)}${sideLink('/app/schedule', '📅', t('nav.schedule'), path)}${sideLink('/app/letters', '📄', t('nav.letters'), path)}${state.isCoordinator ? sideLink('/app/coordinator', '🧭', t('nav.coordinator'), path) : ''}`, content, '/app');
 }
 
 export function managerShell(content, path) {

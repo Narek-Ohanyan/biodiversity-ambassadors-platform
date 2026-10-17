@@ -15,6 +15,7 @@ export const state = {
   unread: 0,
   pendingClaims: 0,
   unreadContact: 0,
+  isCoordinator: false, // approved on the Coordinators team (unlocks the Coordinator room)
 };
 
 const unwrap = ({ data, error }) => { if (error) throw error; return data; };
@@ -120,6 +121,9 @@ export const cancelRole = (role) => sb.rpc('cancel_role', { p_role: role }).then
 export const myLetters = () => sb.rpc('my_letters').then(unwrap);
 export const requestLetter = (p) => sb.rpc('request_letter', { p }).then(unwrap);
 export const voidLetter = (id) => sb.rpc('void_letter', { p_id: id }).then(unwrap);
+export const myCoordinator = () => sb.rpc('my_coordinator').then(unwrap);
+export const coordinatorRoles = () => sb.rpc('coordinator_roles').then(unwrap);
+export const coordinatorShifts = () => sb.rpc('coordinator_shifts').then(unwrap);
 export const myBlueZone = () => sb.rpc('my_blue_zone').then(unwrap);
 export const answerBlueZone = (hasAccess) => sb.rpc('answer_blue_zone', { p_has_access: hasAccess }).then(unwrap);
 export const myShifts = () => sb.rpc('my_shifts').then(unwrap);

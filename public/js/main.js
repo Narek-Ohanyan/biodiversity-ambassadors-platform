@@ -8,6 +8,7 @@ import { publicShell, ambassadorShell, managerShell } from './layouts.js';
 import * as pub from './pages-public.js';
 import * as amb from './pages-ambassador.js';
 import * as mgr from './pages-manager.js';
+import { coordinatorRoomView } from './coordinator.js';
 import { notificationsView, updateBadges, checkPopups, askBlueZone } from './pages-common.js';
 
 const app = document.getElementById('app');
@@ -27,6 +28,7 @@ const ROUTES = {
   '/app/roles': { view: amb.rolesView, title: 'nav.roles', shell: 'ambassador', role: 'ambassador', needsProfile: true, noindex: true },
   '/app/schedule': { view: amb.scheduleView, title: 'nav.schedule', shell: 'ambassador', role: 'ambassador', needsProfile: true, noindex: true },
   '/app/letters': { view: amb.lettersView, title: 'nav.letters', shell: 'ambassador', role: 'ambassador', needsProfile: true, noindex: true },
+  '/app/coordinator': { view: coordinatorRoomView, title: 'nav.coordinator', shell: 'ambassador', role: 'ambassador', needsProfile: true, coordinator: true, noindex: true },
   '/app/unicef': { view: amb.unicefView, title: 'unicef.title', shell: 'ambassador', role: 'ambassador', needsProfile: true, noindex: true },
   '/manager': { view: mgr.overviewView, title: 'mgr.overview', shell: 'manager', role: 'manager', noindex: true },
   '/manager/ambassadors': { view: mgr.mgrAmbassadorsView, title: 'mgr.ambassadors', shell: 'manager', role: 'manager', noindex: true },
@@ -77,6 +79,9 @@ async function route() {
     if (!state.user || !state.account) return navigate('/platform', { replace: true });
     if (state.account.role !== def.role) return navigate(state.account.role === 'manager' ? '/manager' : '/app', { replace: true });
     if (def.role === 'ambassador' && def.needsProfile && !state.profile?.completed) return navigate('/app/profile', { replace: true });
+    // approved Coordinators team members get the Coordinator room (re-checked on every page so the menu stays current)
+    if (def.role === 'ambassador') state.isCoordinator = await api.myCoordinator().catch(() => false);
+    if (def.coordinator && !state.isCoordinator) return navigate('/app', { replace: true });
   }
 
   document.title = `${t(def.title)} · ${BRAND_NAME}`;

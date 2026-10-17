@@ -348,13 +348,13 @@ export async function qrView() {
 
 // ── Roles: applications per team, approval, individual schedules ───────────
 const bzChip = (v) => (v === true ? html`<span class="chip ok">${t('bz.answer_yes')}</span>` : v === false ? html`<span class="chip bad">${t('bz.answer_no')}</span>` : html`<span class="chip neutral">${t('bz.answer_none')}</span>`);
-const roleStatusChip = (st) => (st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>` : st === 'rejected' ? html`<span class="chip bad">${t('roles.st_rejected')}</span>` : html`<span class="chip pending">${t('roles.st_pending')}</span>`);
+export const roleStatusChip = (st) => (st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>` : st === 'rejected' ? html`<span class="chip bad">${t('roles.st_rejected')}</span>` : html`<span class="chip pending">${t('roles.st_pending')}</span>`);
 
 let shiftCache = null;
-const loadShifts = async (force = false) => (shiftCache = !force && shiftCache ? shiftCache : await api.mgr.shifts());
+export const loadShifts = async (force = false, fetcher = api.mgr.shifts) => (shiftCache = !force && shiftCache ? shiftCache : await fetcher());
 
 // One person's calendar (read-only): every slot they planned, coloured by team, plus the workload table.
-function personCalendar(uid, rows, roleCfg) {
+export function personCalendar(uid, rows, roleCfg) {
   const mine = rows.filter((r) => r.id === uid);
   const teams = TEAM_ORDER.filter((k) => mine.some((r) => r.role === k));
   const slots = new Map();
@@ -465,8 +465,12 @@ export async function rolesView() {
 }
 
 // ── Schedule: summary calendar (who is engaged when, where the gaps are) and each ambassador's own ──
-export async function scheduleView() {
-  const [d, shifts] = await Promise.all([api.mgr.roles(), loadShifts(true)]);
+export const scheduleView = () => scheduleViewWith({ roles: api.mgr.roles, shifts: api.mgr.shifts });
+
+// Shared by the manager's Schedule page and the coordinators' room (read-only data, same calendars).
+// `embedded` drops the page heading so the view can sit inside another page.
+export async function scheduleViewWith({ roles, shifts: shiftsFn, embedded = false }) {
+  const [d, shifts] = await Promise.all([roles(), loadShifts(true, shiftsFn)]);
   const cfgMap = Object.fromEntries(d.roles.map((r) => [r.role, r]));
   const people = new Map();
   for (const r of d.rows) if (!people.has(r.id)) people.set(r.id, r);
@@ -510,8 +514,8 @@ export async function scheduleView() {
   const personTab = (uid) => (uid ? personCalendar(uid, d.rows, cfgMap) : html`<div class="empty">${t('cal.pick_person')}</div>`);
 
   return {
-    html: html`<div class="main-head"><h1>${t('mgr.schedule')}</h1><div class="grow"></div><button class="btn secondary" type="button" data-act="sched-reload">↻ ${t('cal.refresh')}</button></div>
-      <p class="muted" style="max-width:760px">${t('mgr.schedule_intro')}</p>
+    html: html`${embedded ? '' : html`<div class="main-head"><h1>${t('mgr.schedule')}</h1><div class="grow"></div><button class="btn secondary" type="button" data-act="sched-reload">↻ ${t('cal.refresh')}</button></div>
+      <p class="muted" style="max-width:760px">${t('mgr.schedule_intro')}</p>`}
       <div class="tabs" role="tablist"><button role="tab" type="button" aria-selected="true" data-act="sched-tab" data-tab="summary">${t('cal.tab_summary')}</button><button role="tab" type="button" aria-selected="false" data-act="sched-tab" data-tab="person">${t('cal.tab_person')}</button></div>
       <div id="sched-summary-pane"><div class="toolbar">
         <select id="sf-team" aria-label="${t('cal.team')}"><option value="">${t('cal.all_teams')}</option>${TEAM_ORDER.filter((k) => cfgMap[k]).map((k) => html`<option value="${k}">${teamName(k)}</option>`)}</select>
