@@ -326,10 +326,15 @@ function roleBlocks(blocks) {
 
 const FULL_DAYS = () => (getLang() === 'hy' ? '19–30 հոկտեմբերի' : '19–30 October');
 
-function teamCard(key, r, bz) {
+// Someone with no approved team is accepted on applying, whatever the capacity — except to the coordinator groups,
+// and to Blue Zones unless they have Blue Zone access (mirrors signup_role in the database).
+const MANUAL_TEAMS = ['coordinators', 'pavilion_coordinators'];
+
+function teamCard(key, r, bz, hasTeam) {
   const L = getLang(), tm = TEAMS[key];
   const st = r.status; // null | pending | approved | rejected
-  const full = !!r.capacity && r.approved >= r.capacity;
+  const autoOk = !hasTeam && !MANUAL_TEAMS.includes(key) && (key !== 'rapporteur' || !!bz?.has_access);
+  const full = !!r.capacity && r.approved >= r.capacity && !autoOk; // a full team still takes people who have no team yet
   const chip = st === 'approved' ? html`<span class="chip ok">✓ ${t('roles.st_approved')}</span>`
     : st === 'pending' ? html`<span class="chip pending">${t('roles.st_pending')}</span>`
     : st === 'rejected' ? html`<span class="chip bad">${t('roles.st_rejected')}</span>`
@@ -345,7 +350,7 @@ function teamCard(key, r, bz) {
       <div class="row"><a class="btn ${needsRec && !r.recording_opened ? '' : 'secondary'}" data-rec-open data-role="${key}" href="${safeUrl(r.recording_url)}" target="_blank" rel="noopener noreferrer">${t('roles.recording_watch')} ↗</a>
         ${needsRec ? html`<button class="btn" type="button" data-act="role-rec-confirm" data-role="${key}" ${r.recording_opened ? '' : raw('disabled')}>${t('roles.recording_confirm')}</button>` : ''}</div></div>`;
   const note = st === 'approved' ? t('roles.note_approved') : st === 'pending' ? t('roles.note_pending') : st === 'rejected' ? t('roles.note_rejected')
-    : full ? t('roles.note_full') : !r.eligible ? t('roles.not_eligible_note') : t('roles.note_apply');
+    : full ? t('roles.note_full') : !r.eligible ? t('roles.not_eligible_note') : autoOk ? t('roles.note_auto') : t('roles.note_apply');
   return html`<div class="card team-card" style="--c:${tm.color}"><div class="row" style="align-items:center;gap:.6rem"><span class="dot big"></span><h2 style="margin:0;font-size:1.3rem">${tm.name[L]}</h2>${chip}</div>
     <div class="chips" style="margin:.7rem 0">
       <span class="chip info">👥 ${t('roles.applied', { n: r.applied })}</span>
@@ -368,7 +373,7 @@ function teamCard(key, r, bz) {
 export async function rolesView() {
   let [roles, bz] = await Promise.all([api.myRoles(), api.myBlueZone().catch(() => null)]);
   const L = getLang(), c = CONTENT.rapporteur;
-  const list = () => TEAM_ORDER.filter((k) => roles[k]).map((k) => teamCard(k, roles[k], bz));
+  const list = () => { const hasTeam = Object.values(roles).some((x) => x.status === 'approved'); return TEAM_ORDER.filter((k) => roles[k]).map((k) => teamCard(k, roles[k], bz, hasTeam)); };
   return {
     html: html`<div class="main-head"><h1>${t('roles.title')}</h1><div class="grow"></div><a class="btn secondary" href="/app/schedule" data-link>📅 ${t('nav.schedule')}</a></div>
       <p class="muted" style="max-width:760px">${t('roles.intro')}</p>
