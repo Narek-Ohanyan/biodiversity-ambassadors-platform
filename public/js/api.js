@@ -39,7 +39,8 @@ export async function loadConfig(force = false) {
   };
   return state.config;
 }
-export const isLocked = () => !!state.config && Date.now() > new Date(state.config.systemDeadline).getTime();
+// The claim period is closed for everyone except users the database marks as unlocked (progress.unlocked).
+export const isLocked = () => !!state.config && Date.now() > new Date(state.config.systemDeadline).getTime() && !state.progress?.unlocked;
 
 export async function loadUser() {
   const { data: { session } } = await sb.auth.getSession();
