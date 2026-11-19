@@ -320,7 +320,8 @@ th { background: var(--forest-50); font-size: .76rem; text-transform: uppercase;
 .sv-q { padding: .9rem 0; border-bottom: 1px solid var(--line); border-radius: 6px; } .sv-q.invalid { background: var(--berry-100); outline: 2px solid var(--berry); outline-offset: 2px; padding-inline: .6rem; }
 .sv-qt { font-weight: 600; margin-bottom: .55rem; } .sv-req { color: var(--berry); }
 .sv-scale { display: flex; flex-wrap: wrap; gap: .4rem; }
-.sv-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.sv-opt { position: relative; display: inline-block; }
+.sv-opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; } /* sits on its own button, so focusing it never scrolls the modal */
 .sv-opt span { display: inline-flex; align-items: center; justify-content: center; min-width: 2.6rem; height: 2.4rem; padding: 0 .7rem; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; cursor: pointer; font-weight: 600; }
 .sv-opt input:checked + span { background: var(--forest-700); border-color: var(--forest-700); color: #fff; }
 .sv-opt input:focus-visible + span { outline: 3px solid var(--apricot); outline-offset: 2px; }
@@ -328,7 +329,8 @@ th { background: var(--forest-50); font-size: .76rem; text-transform: uppercase;
 .sv-ends { display: flex; justify-content: space-between; gap: 1rem; font-size: .8rem; color: var(--muted); margin-top: .3rem; max-width: 34rem; }
 .sv-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem 1rem; align-items: center; padding: .45rem 0; border-top: 1px dashed var(--line); } .sv-rowt { font-size: .92rem; }
 .sv-group { margin-top: .8rem; } .sv-choices { display: grid; gap: .35rem; }
-.sv-inline { width: min(14rem, 100%); margin-left: .4rem; padding: .2rem .5rem; }
+.sv-inline, .check input.sv-inline { width: min(16rem, 100%); height: auto; margin: 0 0 0 .4rem; padding: .35rem .6rem; font-size: .9rem; border-radius: 8px; vertical-align: middle; }
+.check .sv-inline { flex: 0 1 16rem; }
 .sv-story { margin-top: .6rem; } .sv-story summary { cursor: pointer; color: var(--forest-700); font-weight: 600; font-size: .9rem; } .sv-story textarea, .sv textarea { width: 100%; margin-top: .4rem; }
 .sv-sum { margin-bottom: .8rem; } .sv-dist { margin-top: .5rem; } .sv-d { display: grid; grid-template-columns: 1.2rem minmax(6rem, 18rem) 2.5rem; gap: .5rem; align-items: center; margin: .15rem 0; font-size: .85rem; }
 .sv-d.wide { grid-template-columns: minmax(10rem, 22rem) minmax(6rem, 14rem) 2.5rem auto; }

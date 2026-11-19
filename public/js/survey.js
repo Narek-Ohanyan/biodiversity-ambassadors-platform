@@ -19,7 +19,7 @@ export const SURVEY = [
     { id: 'a2', type: 'matrix', req: true, na: true, q: { en: 'Rate each part of the program (1–5, or “did not take part”).', hy: 'Գնահատեք ծրագրի յուրաքանչյուր մասը (1–5, կամ «չեմ մասնակցել»)։' }, ...RATE,
       items: [opt('platform', 'The learning platform and credit system', 'Ուսումնական հարթակը և կրեդիտների համակարգը'), opt('teams', 'The volunteer teams and schedule', 'Կամավորական թիմերը և ժամանակացույցը'),
         opt('support', 'The support and communication from the program team', 'Ծրագրի թիմի աջակցությունը և հաղորդակցությունը'), opt('cop17', 'Your experience at COP17', 'Ձեր փորձը COP17-ում')] },
-    { id: 'a3', type: 'groups', na: true, q: { en: 'Rate the training academy components that you passed (1–5, or “did not take part”).', hy: 'Գնահատեք վերապատրաստման ակադեմիայի այն բաղադրիչները, որոնք անցել եք (1–5, կամ «չեմ մասնակցել»)։' }, ...RATE,
+    { id: 'a3', type: 'groups', req: true, na: true, q: { en: 'Rate the training academy components that you passed (1–5, or “did not take part”).', hy: 'Գնահատեք վերապատրաստման ակադեմիայի այն բաղադրիչները, որոնք անցել եք (1–5, կամ «չեմ մասնակցել»)։' }, ...RATE,
       groups: [
         { title: { en: 'Core — 40 credits', hy: 'Հիմնական — 40 կրեդիտ' }, items: [
           opt('inperson', 'In-Person Introductory Training', 'Առանձին ներածական դասընթաց (դեմ առ դեմ)'), opt('unicef', 'UNICEF Training Modules', 'UNICEF-ի ուսուցողական մոդուլներ'),
@@ -30,33 +30,33 @@ export const SURVEY = [
         { title: { en: 'Soft Skills — 10 credits', hy: 'Փափուկ հմտություններ — 10 կրեդիտ' }, items: [
           opt('comm', 'Communication Course', 'Հաղորդակցության դասընթաց'), opt('digital', 'Digital Communication Course', 'Թվային հաղորդակցության դասընթաց'), opt('soft_other', 'Other:', 'Այլ՝', { other: true })] },
         { title: { en: 'Final Webinar', hy: 'Եզրափակիչ վեբինար' }, items: [opt('webinar', 'Final Webinar', 'Եզրափակիչ վեբինար')] }] },
-    { id: 'a4', type: 'text', q: { en: 'What was the most valuable part of the program for you?', hy: 'Ո՞րն էր ծրագրի ամենաարժեքավոր մասը ձեզ համար։' } },
-    { id: 'a5', type: 'text', q: { en: 'What should we improve?', hy: 'Ի՞նչ պետք է բարելավենք։' } } ] },
+    { id: 'a4', type: 'text', req: true, q: { en: 'What was the most valuable part of the program for you?', hy: 'Ո՞րն էր ծրագրի ամենաարժեքավոր մասը ձեզ համար։' } },
+    { id: 'a5', type: 'text', req: true, q: { en: 'What should we improve?', hy: 'Ի՞նչ պետք է բարելավենք։' } } ] },
   { id: 'B', title: { en: 'B. Impact', hy: 'Բ. Ազդեցություն' }, questions: [
     { id: 'b5', type: 'rating', req: true, q: { en: 'How much did the program increase your knowledge of biodiversity and COP17?', hy: 'Որքանո՞վ ընդլայնեց ծրագիրը ձեր գիտելիքները կենսաբազմազանության և COP17-ի մասին։' }, lo: lo('1 = Not at all', '1 = Ընդհանրապես ոչ'), hi: lo('5 = A great deal', '5 = Շատ') },
     { id: 'b6', type: 'rating', req: true, q: { en: 'How confident are you now in speaking about biodiversity to others?', hy: 'Որքանո՞վ վստահ եք այժմ խոսել կենսաբազմազանության մասին ուրիշների հետ։' }, lo: lo('1 = Not confident', '1 = Վստահ չեմ'), hi: lo('5 = Very confident', '5 = Շատ վստահ եմ') },
     { id: 'b7', type: 'rating', req: true, na: true, q: { en: 'As a Biodiversity Ambassador, how were you viewed by your friends and family?', hy: 'Որպես Կենսաբազմազանության դեսպան՝ ինչպե՞ս էին ձեզ ընկալում ձեր ընկերներն ու ընտանիքը։' },
       lo: lo('1 = Negatively or with no interest', '1 = Բացասաբար կամ առանց հետաքրքրության'), hi: lo('5 = Very positively and supportively', '5 = Շատ դրական և աջակցող') } ] },
   { id: 'C', title: { en: 'C. Continuation of the program', hy: 'Գ. Ծրագրի շարունակությունը' }, questions: [
-    { id: 'c7', type: 'multi', q: { en: 'If the Biodiversity Ambassadors program continues, how would you like to participate in the program?', hy: 'Եթե «Կենսաբազմազանության դեսպաններ» ծրագիրը շարունակվի, ինչպե՞ս կցանկանայիք մասնակցել դրան։' }, options: [
+    { id: 'c7', type: 'multi', req: true, q: { en: 'If the Biodiversity Ambassadors program continues, how would you like to participate in the program?', hy: 'Եթե «Կենսաբազմազանության դեսպաններ» ծրագիրը շարունակվի, ինչպե՞ս կցանկանայիք մասնակցել դրան։' }, options: [
       opt('organize', 'Organizing activities in your community', 'Համայնքում միջոցառումներ կազմակերպելով'), opt('info', 'Receiving information about national and international engagement opportunities', 'Ստանալով տեղեկատվություն ազգային և միջազգային ներգրավման հնարավորությունների մասին'),
       opt('training', 'Accessing specialized training', 'Մասնակցելով մասնագիտացված վերապատրաստումների'), opt('mentoring', 'Mentoring new ambassadors', 'Նոր դեսպաններին մենթորություն անելով')] },
-    { id: 'c8', type: 'multi', q: { en: 'Which formats would you prefer?', hy: 'Ո՞ր ձևաչափերն եք նախընտրում։' }, options: [
+    { id: 'c8', type: 'multi', req: true, q: { en: 'Which formats would you prefer?', hy: 'Ո՞ր ձևաչափերն եք նախընտրում։' }, options: [
       opt('online', 'Online courses', 'Առցանց դասընթացներ'), opt('workshops', 'Workshops', 'Աշխատաժողովներ'), opt('field', 'Field activities and BioBlitz', 'Դաշտային միջոցառումներ և BioBlitz'),
       opt('teams', 'Volunteer teams at events', 'Կամավորական թիմեր միջոցառումներում'), opt('mentoring', 'Mentoring', 'Մենթորություն'), opt('network', 'Network', 'Ցանց'), opt('other', 'Other', 'Այլ', { other: true })] },
-    { id: 'c9', type: 'text', q: { en: 'How would you like a future edition to differ?', hy: 'Ինչպե՞ս կցանկանայիք, որ ապագա հրատարակությունը տարբերվեր։' } } ] },
+    { id: 'c9', type: 'text', req: true, q: { en: 'How would you like a future edition to differ?', hy: 'Ինչպե՞ս կցանկանայիք, որ ապագա հրատարակությունը տարբերվեր։' } } ] },
   { id: 'D', title: { en: 'D. Future of the ambassador network', hy: 'Դ. Դեսպանների ցանցի ապագան' }, questions: [
     { id: 'd10', type: 'rating', req: true, q: { en: 'How valuable is staying connected with the ambassador network?', hy: 'Որքանո՞վ արժեքավոր է կապի մեջ մնալը դեսպանների ցանցի հետ։' }, lo: lo('1 = Not valuable', '1 = Արժեքավոր չէ'), hi: lo('5 = Very valuable', '5 = Շատ արժեքավոր է') },
-    { id: 'd11', type: 'multi', q: { en: 'What should the network do?', hy: 'Ի՞նչ պետք է անի ցանցը։' }, options: [
+    { id: 'd11', type: 'multi', req: true, q: { en: 'What should the network do?', hy: 'Ի՞նչ պետք է անի ցանցը։' }, options: [
       opt('share', 'Share opportunities', 'Կիսվի հնարավորություններով'), opt('projects', 'Run joint projects', 'Իրականացնի համատեղ նախագծեր'), opt('meetings', 'Organize regular meetings', 'Կազմակերպի պարբերական հանդիպումներ'),
       opt('training', 'Offer training', 'Առաջարկի վերապատրաստումներ'), opt('advocacy', 'Support national and international advocacy', 'Աջակցի ազգային և միջազգային ջատագովությանը'), opt('other', 'Other:', 'Այլ՝', { other: true })] } ] },
   { id: 'E', title: { en: 'E. Readiness to join', hy: 'Ե. Միանալու պատրաստակամությունը' }, questions: [
     { id: 'e12', type: 'single', req: true, q: { en: 'Are you ready to stay active as a Biodiversity Ambassador after COP17?', hy: 'Պատրա՞ստ եք COP17-ից հետո ակտիվ մնալ որպես Կենսաբազմազանության դեսպան։' }, options: [
       opt('active', 'Yes, actively', 'Այո, ակտիվորեն'), opt('occasionally', 'Yes, occasionally', 'Այո, ժամանակ առ ժամանակ'), opt('unsure', 'Not sure', 'Վստահ չեմ'), opt('no', 'No', 'Ոչ')] },
-    { id: 'e13', type: 'text', q: { en: 'How would you like to contribute?', hy: 'Ինչպե՞ս կցանկանայիք ներդրում ունենալ։' } },
+    { id: 'e13', type: 'text', req: true, q: { en: 'How would you like to contribute?', hy: 'Ինչպե՞ս կցանկանայիք ներդրում ունենալ։' } },
     { id: 'e14', type: 'single', req: true, q: { en: 'How many hours per month could you commit?', hy: 'Ամսական քանի՞ ժամ կարող եք տրամադրել։' }, options: [opt('0-2', '0–2', '0–2'), opt('3-5', '3–5', '3–5'), opt('6-10', '6–10', '6–10'), opt('10+', '10+', '10+')] } ] },
   { id: 'F', title: { en: 'Closing', hy: 'Եզրափակում' }, questions: [
-    { id: 'f15', type: 'single', q: { en: 'Would you be willing to be contacted for a short focus group discussion (online)?', hy: 'Պատրա՞ստ եք, որ ձեզ հետ կապ հաստատենք կարճ (առցանց) ֆոկուս խմբի քննարկման համար։' }, options: [opt('yes', 'Yes', 'Այո'), opt('no', 'No', 'Ոչ')] },
+    { id: 'f15', type: 'single', req: true, q: { en: 'Would you be willing to be contacted for a short focus group discussion (online)?', hy: 'Պատրա՞ստ եք, որ ձեզ հետ կապ հաստատենք կարճ (առցանց) ֆոկուս խմբի քննարկման համար։' }, options: [opt('yes', 'Yes', 'Այո'), opt('no', 'No', 'Ոչ')] },
     { id: 'f16', type: 'text', q: { en: 'Any other comments for the program team?', hy: 'Ունե՞ք այլ մեկնաբանություններ ծրագրի թիմի համար։' } } ] },
 ];
 
@@ -78,11 +78,11 @@ function questionHtml(q, n, lg) {
     ${q.items.map((it) => html`<div class="sv-row"><div class="sv-rowt">${tx(it.t, lg)}</div>${scale(`${q.id}.${it.id}`, q.na, lg)}</div>`)}${story(q.id, lg)}</div>`;
   if (q.type === 'groups') return html`<div class="sv-q" data-q="${q.id}">${title}${ends(q, lg)}
     ${q.groups.map((g) => html`<div class="sv-group"><b>${tx(g.title, lg)}</b>
-      ${g.items.map((it) => html`<div class="sv-row"><div class="sv-rowt">${tx(it.t, lg)}${it.other ? html` <input type="text" class="sv-inline" name="${q.id}.${it.id}__name" maxlength="80" aria-label="${tx(it.t, lg)}">` : ''}</div>${scale(`${q.id}.${it.id}`, q.na, lg)}</div>`)}</div>`)}${story(q.id, lg)}</div>`;
+      ${g.items.map((it) => html`<div class="sv-row"><div class="sv-rowt">${tx(it.t, lg)}${it.other ? html` <input type="text" class="sv-inline" name="${q.id}.${it.id}__name" maxlength="80" placeholder="${lg === 'hy' ? 'Նշեք' : 'Please specify'}" aria-label="${tx(it.t, lg)}">` : ''}</div>${scale(`${q.id}.${it.id}`, q.na, lg)}</div>`)}</div>`)}${story(q.id, lg)}</div>`;
   if (q.type === 'single') return html`<div class="sv-q" data-q="${q.id}">${title}<div class="sv-choices">
     ${q.options.map((o) => html`<label class="check"><input type="radio" name="${q.id}" value="${o.id}"> <span>${tx(o.t, lg)}</span></label>`)}</div>${story(q.id, lg)}</div>`;
   if (q.type === 'multi') return html`<div class="sv-q" data-q="${q.id}">${title}<div class="sv-choices">
-    ${q.options.map((o) => html`<label class="check"><input type="checkbox" name="${q.id}" value="${o.id}"> <span>${tx(o.t, lg)}</span>${o.other ? html` <input type="text" class="sv-inline" name="${q.id}__other" maxlength="120" aria-label="${tx(o.t, lg)}">` : ''}</label>`)}</div>${story(q.id, lg)}</div>`;
+    ${q.options.map((o) => html`<label class="check"><input type="checkbox" name="${q.id}" value="${o.id}"> <span>${tx(o.t, lg)}</span>${o.other ? html` <input type="text" class="sv-inline" name="${q.id}__other" maxlength="120" placeholder="${lg === 'hy' ? 'Նշեք' : 'Please specify'}" aria-label="${tx(o.t, lg)}">` : ''}</label>`)}</div>${story(q.id, lg)}</div>`;
   return html`<div class="sv-q" data-q="${q.id}">${title}<textarea name="${q.id}" rows="3" maxlength="1500"></textarea></div>`;
 }
 
@@ -122,7 +122,9 @@ function collect(el, ans) {
 
 const answered = (ans, q) => {
   if (q.type === 'matrix') return q.items.every((it) => ans[q.id]?.[it.id] !== undefined);
-  return ans[q.id] !== undefined && ans[q.id] !== '';
+  if (q.type === 'groups') return q.groups.every((g) => g.items.every((it) => it.other || ans[q.id]?.[it.id] !== undefined)); // "Other:" rows are optional
+  if (q.type === 'multi') return Array.isArray(ans[q.id]) && ans[q.id].length > 0;
+  return ans[q.id] !== undefined && String(ans[q.id]).trim() !== '';
 };
 
 // Opens the survey; resolves true once it has been submitted.
