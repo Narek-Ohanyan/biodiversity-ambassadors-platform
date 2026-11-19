@@ -11,6 +11,8 @@ import { ambUrl, ambCode, qrSvg, qrPng, makeZip, download, qrFileStem } from './
 import { TEAM_ORDER, EVENT_DAYS, HOURS, FIRST_HOUR, LAST_HOUR, dayParts, hourLabel, teamName, teamColor } from './teams.js';
 import { calGrid, slotKey, workloadHtml, heat } from './calendar.js';
 import { downloadLetter } from './letters.js';
+import { downloadCertificate } from './certificate.js';
+import { SURVEY, QUESTIONS } from './survey.js';
 
 const L = () => getLang();
 const fullName = (a) => `${a.first_name || ''} ${a.last_name || ''}`.trim();
@@ -286,6 +288,66 @@ export async function lettersView() {
         const body = d.rows.map((r) => [num(r), r.lang, r.voided_at ? 'voided' : 'issued', r.email, r.first_name, r.last_name, r.first_name_hy ? `${r.first_name_hy} ${r.patronymic_hy} ${r.last_name_hy}` : '', r.first_name_en ? `${r.first_name_en} ${r.last_name_en}` : '',
           r.passport_number, r.passport_issued_on, r.passport_issued_by, r.passport_issued_by_en, r.created_at, r.voided_at].map(csvCell).join(','));
         download(new Blob(['﻿' + [head.join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' }), `letters-register-${new Date().toISOString().slice(0, 10)}.csv`);
+      };
+    },
+  };
+}
+
+// ── Feedback survey results and issued certificates ─────────────────────────
+export async function surveyView() {
+  const d = await api.mgr.survey();
+  const rows = d.rows, lg = getLang();
+  const txt = (o) => (o ? (o[lg] ?? o.en) : '');
+  const nums = (vals) => vals.filter((v) => typeof v === 'number');
+  const avg = (v) => (v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : '—');
+  const dist = (v) => html`<div class="sv-dist">${[1, 2, 3, 4, 5].map((n) => { const c = v.filter((x) => x === n).length; return html`<div class="sv-d"><span>${n}</span><div class="bar sm core"><i style="width:${v.length ? (c / v.length) * 100 : 0}%"></i></div><b>${c}</b></div>`; })}</div>`;
+  const ratingBlock = (vals) => { const v = nums(vals), na = vals.filter((x) => x === 'na').length;
+    return html`<div class="row" style="gap:.6rem"><span class="chip credits">${t('mgr.sv_avg')}: ${avg(v)}</span><span class="chip neutral">n=${v.length}</span>${na ? html`<span class="chip neutral">${t('mgr.sv_na', { n: na })}</span>` : ''}</div>${dist(v)}`; };
+  const stories = (q) => { const list = rows.map((r) => r.answers[`${q.id}__story`]).filter(Boolean);
+    return list.length ? html`<details class="sv-story"><summary>${t('mgr.sv_stories', { n: list.length })}</summary><ul class="sv-list">${list.map((x) => html`<li>${x}</li>`)}</ul></details>` : ''; };
+  const countOpts = (q) => html`${q.options.map((o) => { const c = rows.filter((r) => (Array.isArray(r.answers[q.id]) ? r.answers[q.id].includes(o.id) : r.answers[q.id] === o.id)).length;
+      const others = o.other ? rows.map((r) => r.answers[`${q.id}__other`]).filter(Boolean) : [];
+      return html`<div class="sv-d wide"><span>${txt(o.t)}</span><div class="bar sm core"><i style="width:${rows.length ? (c / rows.length) * 100 : 0}%"></i></div><b>${c}</b></div>${others.length ? html`<div class="muted small" style="margin:0 0 .3rem 1rem">${t('mgr.sv_other')}: ${others.join(' · ')}</div>` : ''}`; })}`;
+  const itemBlock = (q, items, getter) => html`${items.map((it) => { const v = nums(rows.map((r) => getter(r, it.id))); const na = rows.filter((r) => getter(r, it.id) === 'na').length;
+    const names = it.other ? rows.map((r) => r.answers[q.id]?.[`${it.id}__name`]).filter(Boolean) : [];
+    return html`<div class="sv-d wide"><span>${txt(it.t)}${names.length ? html` <span class="muted small">(${names.join(', ')})</span>` : ''}</span><div class="bar sm core"><i style="width:${(Number(avg(v)) || 0) * 20}%"></i></div><b>${avg(v)}</b><span class="muted small">n=${v.length}${na ? ` · ${t('mgr.sv_na', { n: na })}` : ''}</span></div>`; })}`;
+  let n = 0;
+  const qBlock = (q) => { n += 1; let body = '';
+    if (q.type === 'rating') body = ratingBlock(rows.map((r) => r.answers[q.id]).filter((x) => x !== undefined));
+    else if (q.type === 'matrix') body = itemBlock(q, q.items, (r, id) => r.answers[q.id]?.[id]);
+    else if (q.type === 'groups') body = q.groups.map((g) => html`<div class="small" style="margin:.5rem 0 .2rem"><b>${txt(g.title)}</b></div>${itemBlock(q, g.items, (r, id) => r.answers[q.id]?.[id])}`);
+    else if (q.type === 'single' || q.type === 'multi') body = countOpts(q);
+    else { const list = rows.map((r) => r.answers[q.id]).filter(Boolean); body = html`<details class="sv-story" ${list.length ? '' : raw('')}><summary>${t('mgr.sv_answers', { n: list.length })}</summary><ul class="sv-list">${list.map((x) => html`<li>${x}</li>`)}</ul></details>`; }
+    return html`<div class="card flat sv-sum"><div class="sv-qt"><b>${n}.</b> ${txt(q.q)}</div>${body}${q.type === 'text' ? '' : stories(q)}</div>`; };
+  const respondents = () => html`<div class="table-wrap"><table><thead><tr><th>${t('mgr.ambassador')}</th><th>${t('let.col_lang')}</th><th>${t('let.col_date')}</th><th>${t('mgr.sv_cert_hy')}</th><th>${t('mgr.sv_cert_en')}</th><th>${t('mgr.sv_edits')}</th><th></th></tr></thead><tbody>
+    ${rows.map((r) => html`<tr><td><b>${fullName(r) || '—'}</b><div class="small muted">${r.email}</div></td><td>${r.lang === 'hy' ? 'ՀԱՅ' : 'EN'}</td><td class="small">${fmtDateTime(r.submitted_at)}</td>
+      <td>${r.cert_hy || html`<span class="muted small">${t('mgr.sv_no_cert')}</span>`}</td><td>${r.cert_en || ''}</td><td>${r.cert_edits ?? ''}</td>
+      <td>${r.cert_hy ? html`<button class="btn secondary sm" type="button" data-act="sv-cert" data-id="${r.id}">⬇ ${t('mgr.sv_download')}</button>` : ''}</td></tr>`)}</tbody></table></div>`;
+  return {
+    html: html`<div class="main-head"><h1>${t('mgr.survey')}</h1><div class="grow"></div><button class="btn secondary" type="button" data-act="sv-csv" ${rows.length ? '' : raw('disabled')}>⬇ ${t('mgr.export')}</button></div>
+      <p class="muted" style="max-width:760px">${t('mgr.sv_intro')}</p>
+      <div class="row" style="margin:1rem 0"><span class="chip ok">${t('mgr.sv_responses', { n: rows.length, total: d.qualified })}</span></div>
+      ${rows.length ? html`${SURVEY.map((sec) => html`<h2 style="font-size:1.25rem;margin:1.6rem 0 .6rem">${txt(sec.title)}</h2>${sec.questions.map(qBlock)}`)}
+        <h2 style="font-size:1.25rem;margin:1.6rem 0 .6rem">${t('mgr.sv_respondents')}</h2>${respondents()}` : html`<div class="empty">${t('mgr.sv_none')}</div>`}`,
+    mount() {
+      actions['sv-cert'] = async (el) => {
+        const r = rows.find((x) => x.id === el.dataset.id); setBusy(el, true, t('common.wait'));
+        try { await downloadCertificate({ hy: r.cert_hy, en: r.cert_en }); } catch (e) { toast(errText(e), 'bad'); }
+        setBusy(el, false);
+      };
+      actions['sv-csv'] = () => {
+        const cols = [['email', (r) => r.email], ['first_name', (r) => r.first_name], ['last_name', (r) => r.last_name], ['university', (r) => r.university], ['survey_language', (r) => r.lang], ['submitted_at', (r) => r.submitted_at]];
+        for (const q of QUESTIONS) {
+          const label = q.id;
+          if (q.type === 'matrix') q.items.forEach((it) => cols.push([`${label}.${it.id}`, (r) => r.answers[q.id]?.[it.id]]));
+          else if (q.type === 'groups') q.groups.forEach((g) => g.items.forEach((it) => { cols.push([`${label}.${it.id}`, (r) => r.answers[q.id]?.[it.id]]); if (it.other) cols.push([`${label}.${it.id}__name`, (r) => r.answers[q.id]?.[`${it.id}__name`]]); }));
+          else cols.push([label, (r) => (Array.isArray(r.answers[q.id]) ? r.answers[q.id].join('; ') : r.answers[q.id])]);
+          if (q.type !== 'text') cols.push([`${label}__story`, (r) => r.answers[`${q.id}__story`]]);
+          if (q.options?.some((o) => o.other)) cols.push([`${label}__other`, (r) => r.answers[`${q.id}__other`]]);
+        }
+        cols.push(['certificate_name_hy', (r) => r.cert_hy], ['certificate_name_en', (r) => r.cert_en], ['certificate_changes', (r) => r.cert_edits]);
+        const body = rows.map((r) => cols.map(([, f]) => csvCell(f(r))).join(','));
+        download(new Blob(['﻿' + [cols.map(([h]) => h).join(','), ...body].join('\n')], { type: 'text/csv;charset=utf-8' }), `survey-responses-${new Date().toISOString().slice(0, 10)}.csv`);
       };
     },
   };

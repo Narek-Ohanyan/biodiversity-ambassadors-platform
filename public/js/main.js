@@ -36,6 +36,7 @@ const ROUTES = {
   '/manager/roles': { view: mgr.rolesView, title: 'mgr.roles', shell: 'manager', role: 'manager', noindex: true },
   '/manager/schedule': { view: mgr.scheduleView, title: 'mgr.schedule', shell: 'manager', role: 'manager', noindex: true },
   '/manager/letters': { view: mgr.lettersView, title: 'mgr.letters', shell: 'manager', role: 'manager', noindex: true },
+  '/manager/survey': { view: mgr.surveyView, title: 'mgr.survey', shell: 'manager', role: 'manager', noindex: true },
   '/manager/qr': { view: mgr.qrView, title: 'mgr.qr', shell: 'manager', role: 'manager', noindex: true },
   '/manager/webinar': { view: mgr.webinarView, title: 'mgr.webinar', shell: 'manager', role: 'manager', noindex: true },
   '/manager/checkins': { view: mgr.checkinsView, title: 'mgr.checkins', shell: 'manager', role: 'manager', noindex: true },

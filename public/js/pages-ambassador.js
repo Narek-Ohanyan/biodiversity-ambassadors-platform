@@ -10,6 +10,8 @@ import { CONTENT } from './content.js';
 import { formMsg, localUniversity } from './pages-public.js';
 import { askBlueZone } from './pages-common.js';
 import { downloadLetter } from './letters.js';
+import { downloadCertificate } from './certificate.js';
+import { claimCertificate, openNames } from './survey.js';
 import { TEAMS, TEAM_ORDER, EVENT_DAYS, HOURS, FIRST_HOUR, LAST_HOUR, dayParts, hourLabel, teamName, teamColor } from './teams.js';
 import { calGrid, bindPaint, slotKey, workloadHtml, legendHtml } from './calendar.js';
 
@@ -260,7 +262,7 @@ function webinarHtml(w, progress) {
     </div>${recording}</section>`;
 }
 
-export async function learningView() {
+async function fullLearningView() {
   await api.refreshMe();
   const cfg = state.config;
   const [claims, unicefStatus, webinar] = await Promise.all([api.myClaims(), api.myUnicefStatus(), api.myWebinarStatus()]);
@@ -314,6 +316,56 @@ export async function learningView() {
       const timer = setInterval(() => { if (!slot()) clearInterval(timer); else refresh(); }, 10000);
     },
   };
+}
+
+// ── Qualified ambassadors: the certificate and their credit history ─────────
+// Claims are closed, so a qualified ambassador sees what they earned (approved credits and the webinar), and the
+// "Claim your certificate" button; nothing to claim and no categories they did not complete.
+async function creditHistoryView() {
+  const cfg = state.config, progress = state.progress, L = getLang();
+  const [claims, webinar, cert] = await Promise.all([api.myClaims(), api.myWebinarStatus(), api.myCertificate()]);
+  const approved = claims.filter((c) => c.status === 'approved' && c.activity_key !== 'webinar');
+  const actOf = (key) => cfg.activities.find((a) => a.key === key);
+  const nameOf = (c) => { const a = actOf(c.activity_key); return (a ? a[L] : c.activity_key) + (a?.is_other && c.form?.project_name ? ` — ${c.form.project_name}` : ''); };
+  const dateOf = (c) => fmtDate(c.decided_at || c.created_at);
+  const cats = ['core', 'elective', 'soft'].filter((c) => approved.some((x) => x.category === c));
+  const wp = progress.categories.webinar;
+  const hasWebinar = webinar.done || webinar.excused || webinar.recording_watched;
+  const cstate = cert.certificate;
+  const certCard = html`<div class="card cert-card"><div class="row" style="align-items:center;gap:.6rem"><span style="font-size:1.8rem" aria-hidden="true">🎓</span><h2 style="margin:0;font-size:1.4rem">${t('cert.title')}</h2></div>
+    <p style="margin:.6rem 0">${t('cert.intro')}</p>
+    <ol class="cert-steps"><li class="${cert.survey_done ? 'done' : ''}">${t('cert.step1')}</li><li class="${cstate ? 'done' : ''}">${t('cert.step2')}</li><li>${t('cert.step3')}</li></ol>
+    <div class="row" style="margin-top:.8rem">
+      ${cstate ? html`<button class="btn lg" type="button" data-act="cert-dl">⬇ ${t('cert.download')}</button>${cstate.edits_left > 0 ? html`<button class="btn secondary" type="button" data-act="cert-edit">${t('cert.edit_names')} (${cstate.edits_left})</button>` : ''}`
+        : html`<button class="btn lg" type="button" data-act="cert-claim">🎓 ${t('cert.claim')}</button>`}
+      ${cert.survey_done ? html`<span class="chip ok">✓ ${t('cert.survey_done')}</span>` : ''}</div></div>`;
+  return {
+    html: html`<div class="main-head"><h1>${t('nav.learning')}</h1></div>
+      <div class="banner ok"><span>🎉</span><div><b>${t('learn.qualified')}</b> ${t('learn.qualified_text')}</div></div>
+      ${certCard}
+      <div class="card" style="margin-top:1.2rem"><div class="row" style="align-items:center"><h2 style="margin:0;font-size:1.3rem">${t('hist.title')}</h2><div class="grow"></div>
+          <span class="chip credits">${t('hist.total', { n: progress.total })}</span>${wp.priority ? html`<span class="chip credits">★ ${t('webinar.priority_chip')}</span>` : ''}</div>
+        ${cats.length || hasWebinar ? '' : html`<p class="muted" style="margin:.8rem 0 0">${t('hist.none')}</p>`}
+        ${cats.map((c) => { const rows = approved.filter((x) => x.category === c);
+          return html`<section class="cat-block closed"><div class="cat-head"><span class="dot" style="background:var(--${c})"></span><h3 style="margin:0">${t(`cat.${c}`)}</h3><span class="chip ok">${progress.categories[c].earned} / ${progress.categories[c].required}</span></div>
+            ${rows.map((r) => html`<div class="activity"><div><h3>${nameOf(r)}</h3><div class="meta"><span class="chip credits">${r.credits} ${t('learn.credits')}</span><span class="muted small">${t('hist.approved_on', { date: dateOf(r) })}</span></div></div></div>`)}</section>`; })}
+        ${hasWebinar ? html`<section class="cat-block closed"><div class="cat-head"><span class="dot" style="background:var(--elective)"></span><h3 style="margin:0">${t('cat.webinar')}</h3><span class="chip ok">✓ ${t('learn.cat_complete')}</span></div>
+          <div class="activity"><div><h3>${actOf('webinar')?.[L] || t('cat.webinar')}</h3><div class="meta">
+            ${webinar.done ? html`<span class="chip credits">${wp.earned || actOf('webinar')?.credits || 10} ${t('learn.credits')}</span><span class="chip ok">${webinar.bonus ? t('webinar.attended_bonus') : t('webinar.attended_elective')}</span>`
+              : webinar.excused ? html`<span class="chip info">${t('webinar.excused_note')}</span>` : html`<span class="chip ok">${t('webinar.recording_done')}</span>`}</div></div></div></section>` : ''}</div>
+      <p class="muted small" style="margin-top:1rem">${t('hist.note')}</p>`,
+    mount() {
+      const names = () => ({ hy: cstate.full_name_hy, en: cstate.full_name_en });
+      actions['cert-claim'] = async (el) => { setBusy(el, true, t('common.wait')); try { if (await claimCertificate()) navigate(location.pathname); } catch (e) { toast(errText(e), 'bad'); } setBusy(el, false); };
+      actions['cert-dl'] = async (el) => { setBusy(el, true, t('cert.generating')); try { await downloadCertificate(names()); } catch (e) { toast(e?.message === 'name_too_long' ? t('cert.too_long') : errText(e), 'bad'); } setBusy(el, false); };
+      actions['cert-edit'] = async () => { if (await openNames(cstate)) navigate(location.pathname); };
+    },
+  };
+}
+
+export async function learningView() {
+  await api.refreshMe();
+  return state.progress?.qualified ? creditHistoryView() : fullLearningView();
 }
 
 // ── Roles (volunteer roles; first one: Rapporteur) ─────────────────────────
@@ -713,156 +765,42 @@ actions['claim-form'] = (el) => {
   };
 };
 
-// ── UNICEF course: sequential modules, locked videos (no skipping ahead), quiz per module ──
-// All of the actual enforcement (module order, video order, no-skip rate limiting, the quiz answer
-// key) lives server-side in report_video_progress()/submit_quiz() — this view is just the player.
+// ── UNICEF course: an open library. Every module and video is available to everybody, in any order, to rewatch
+// (no locks, no progress tracking, no quiz). ──
 const videoUrl = (v) => `${MEDIA_BASE}/unicef_modules/${v.dir}/${encodeURIComponent(v.filename)}`;
-const PING_MS = 4000;
 
 export async function unicefView() {
-  await api.refreshMe();
-  let status = await api.myUnicefStatus();
-  const locked = isLocked();
-  let openModuleId = null; // null = module list; otherwise showing that module's player/quiz
-
+  const status = await api.myUnicefStatus();
   const L = getLang();
-  const modTitle = (m) => m[`title_${L}`];
+  let openId = null, playing = null; // module being shown, and the video id playing in it
+  const title = (o) => o[`title_${L}`];
 
-  function listHtml() {
-    const doneCount = status.filter((m) => m.completed).length;
-    const allDone = doneCount === status.length;
-    const pct = status.length ? Math.round((doneCount / status.length) * 100) : 0;
-    return html`<div class="main-head"><div><a class="small" href="/app/learning" data-link>← ${t('nav.learning')}</a><h1>${t('unicef.title')}</h1></div></div>
-      <p class="muted" style="max-width:720px">${t('unicef.intro')}</p>
-      ${allDone ? html`<div class="banner ok"><span>🎉</span><div>${t('unicef.completed', { credits: 20 })}</div></div>`
-        : locked ? html`<div class="banner bad"><span>🔒</span><div>${t('learn.closed_banner')}</div></div>` : ''}
-      <div class="card" style="margin-bottom:1.2rem"><div class="row"><b>${t('unicef.progress')}</b><span class="muted">${doneCount} / ${status.length}</span><div class="grow"></div><span class="chip credits">20 ${t('learn.credits')}</span></div>
-        <div class="bar core" style="margin-top:.6rem"><i style="width:${pct}%"></i></div></div>
-      ${status.map((m) => {
-        const videosDone = m.videos.filter((v) => v.completed).length;
-        const sub = m.completed ? t('unicef.module_done')
-          : !m.unlocked ? t('unicef.module_locked_note')
-          : m.all_videos_done ? (m.quiz.attempted && !m.quiz.passed ? t('unicef.quiz_failed_note', { score: m.quiz.score, total: m.quiz.total }) : t('unicef.quiz_ready'))
-          : t('unicef.videos_progress', { done: videosDone, total: m.videos.length });
-        return html`<div class="module ${m.completed ? 'done' : ''}">
-          <div class="num">${m.completed ? '✓' : m.unlocked ? m.sort : '🔒'}</div>
-          <div><h3 style="margin:0;font-family:var(--font-body);font-size:1.02rem">${modTitle(m)}</h3><div class="muted small">${sub}</div></div>
-          <div class="row">${m.unlocked
-            ? html`<button class="btn ${m.completed ? 'secondary' : ''} sm" type="button" data-act="uni-open" data-id="${m.id}">${m.completed ? t('unicef.review') : t('unicef.continue_module')}</button>`
-            : html`<span class="muted small">${t('unicef.locked_short')}</span>`}</div></div>`;
-      })}
-      <p class="muted small">${t('unicef.note')}</p>`;
-  }
+  const listHtml = () => html`<div class="main-head"><div><a class="small" href="/app/learning" data-link>← ${t('nav.learning')}</a><h1>${t('unicef.title')}</h1></div></div>
+    <p class="muted" style="max-width:720px">${t('unicef.rewatch_intro')}</p>
+    ${status.map((m) => html`<div class="module"><div class="num">${m.sort}</div>
+      <div><h3 style="margin:0;font-family:var(--font-body);font-size:1.02rem">${title(m)}</h3><div class="muted small">${t('unicef.videos_count', { n: m.videos.length })}</div></div>
+      <div class="row"><button class="btn secondary sm" type="button" data-act="uni-open" data-id="${m.id}">${t('unicef.open_module')}</button></div></div>`)}`;
 
-  function videoRowHtml(m, v, isCurrent) {
-    const pct = v.duration ? Math.min(100, Math.round((v.max_time / v.duration) * 100)) : (v.completed ? 100 : 0);
-    return html`<div class="module ${v.completed ? 'done' : ''} ${isCurrent ? 'current' : ''}" data-video-row="${v.id}">
-      <div class="num">${v.completed ? '✓' : v.unlocked ? v.sort : '🔒'}</div>
-      <div><h3 style="margin:0;font-family:var(--font-body);font-size:.95rem">${v[`title_${L}`]}</h3>
-        <div class="bar sm core" style="margin-top:.35rem;max-width:220px"><i data-video-bar="${v.id}" style="width:${pct}%"></i></div></div>
-      <div class="row">${v.completed ? html`<span class="chip ok">✓ ${t('unicef.watched')}</span>`
-        : v.unlocked ? html`<span class="chip info">${t('unicef.now_watching')}</span>`
-        : html`<span class="chip neutral">${t('unicef.locked_short')}</span>`}</div>
-    </div>`;
-  }
-
-  function quizHtml(m, qs) {
-    if (m.quiz.passed) {
-      return html`<div class="banner ok"><span>✅</span><div>${t('unicef.quiz_passed_note', { score: m.quiz.score, total: m.quiz.total })}</div></div>`;
-    }
-    return html`<div class="card">
-      <h3>${t('unicef.quiz_title')}</h3>
-      ${m.quiz.attempted ? html`<div class="banner bad"><span>✕</span><div>${t('unicef.quiz_failed_note', { score: m.quiz.score, total: m.quiz.total })}</div></div>` : html`<p class="muted small">${t('unicef.quiz_intro')}</p>`}
-      <form data-form="uni-quiz">
-        ${qs.map((q, i) => html`<fieldset class="field" style="border:0;padding:0;margin-bottom:1.1rem">
-          <legend style="font-weight:600;margin-bottom:.5rem">${i + 1}. ${L === 'hy' ? q.question_hy : q.question_en}</legend>
-          ${q.options.map((o) => html`<label class="check" style="font-weight:400;margin-bottom:.3rem">
-            <input type="radio" name="${q.id}" value="${o.key}" required> <span>${L === 'hy' ? o.hy : o.en}</span></label>`)}
-        </fieldset>`)}
-        <button class="btn" type="submit" ${locked ? raw('disabled') : ''}>${t('unicef.quiz_submit')}</button>
-      </form></div>`;
-  }
-
-  async function moduleDetailHtml(m) {
-    const current = m.videos.find((v) => v.unlocked && !v.completed);
-    const qs = m.all_videos_done ? await api.unicefQuizQuestions(m.id) : [];
-    return html`<div class="main-head"><div><button class="link-btn" type="button" data-act="uni-back">← ${t('unicef.back_to_modules')}</button><h1>${modTitle(m)}</h1></div></div>
-      ${current ? html`<div class="card" style="margin-bottom:1rem">
-        <video id="uni-player" data-video-id="${current.id}" data-max-time="${current.max_time}" controls preload="metadata"
-          controlsList="nodownload noremoteplayback" disablepictureinpicture playsinline
-          style="width:100%;max-height:70vh;border-radius:10px;background:#000" src="${videoUrl(current)}"></video>
-        <p class="muted small" style="margin-top:.6rem">${t('unicef.no_skip_note')}</p></div>` : ''}
+  const moduleHtml = (m) => {
+    const cur = m.videos.find((v) => v.id === playing) || m.videos[0];
+    return html`<div class="main-head"><div><button class="link-btn" type="button" data-act="uni-back">← ${t('unicef.back_to_modules')}</button><h1>${title(m)}</h1></div></div>
+      ${cur ? html`<div class="card" style="margin-bottom:1rem"><video id="uni-player" controls preload="metadata" playsinline controlsList="nodownload noremoteplayback" disablepictureinpicture
+          style="width:100%;max-height:70vh;border-radius:10px;background:#000" src="${videoUrl(cur)}"></video>
+        <p style="margin:.6rem 0 0"><b>${title(cur)}</b></p></div>` : ''}
       <h3>${t('unicef.videos_label')}</h3>
-      ${m.videos.map((v) => videoRowHtml(m, v, current?.id === v.id))}
-      ${m.all_videos_done ? quizHtml(m, qs) : html`<p class="muted small">${t('unicef.finish_videos_note')}</p>`}`;
-  }
-
-  async function render(root) {
-    const m = openModuleId ? status.find((x) => x.id === openModuleId) : null;
-    root.innerHTML = (m ? await moduleDetailHtml(m) : listHtml()).s;
-    if (m) wireVideo(root, m);
-  }
-
-  function wireVideo(root, m) {
-    const video = root.querySelector('#uni-player');
-    if (!video) return;
-    let maxTime = Number(video.dataset.maxTime) || 0;
-    let lastPing = 0;
-    let settled = false;
-
-    // Resume where the ambassador left off. readyState may already be >= HAVE_METADATA by the time this
-    // runs (a cached video can reach that state before the loadedmetadata listener below gets attached),
-    // so check both: once now, and again if the event still fires later.
-    const resumeSeek = () => { if (maxTime > 0 && video.duration) video.currentTime = Math.min(maxTime, video.duration - 0.25); };
-    if (video.readyState >= 1) resumeSeek();
-    video.addEventListener('loadedmetadata', resumeSeek);
-    video.addEventListener('seeking', () => { if (video.currentTime > maxTime + 1.5) video.currentTime = maxTime; });
-    video.addEventListener('ratechange', () => { if (video.playbackRate > 1.01) video.playbackRate = 1; });
-
-    const bar = () => root.querySelector(`[data-video-bar="${video.dataset.videoId}"]`);
-    const ping = async (force) => {
-      if (settled) return;
-      const now = Date.now();
-      if (!force && now - lastPing < PING_MS) return;
-      lastPing = now;
-      maxTime = Math.max(maxTime, video.currentTime);
-      let r;
-      try { r = await api.reportVideoProgress(video.dataset.videoId, video.currentTime, video.duration || null); }
-      catch { return; }
-      maxTime = Math.max(maxTime, r.max_time);
-      if (video.duration && bar()) bar().style.width = `${Math.min(100, Math.round((maxTime / video.duration) * 100))}%`;
-      if (r.completed) {
-        settled = true;
-        video.pause();
-        toast(t('unicef.video_done'));
-        status = await api.myUnicefStatus();
-        render(root);
-      }
-    };
-    video.addEventListener('timeupdate', () => ping(false));
-    video.addEventListener('pause', () => ping(true));
-    video.addEventListener('ended', () => ping(true));
-  }
+      ${m.videos.map((v) => html`<div class="module ${v.id === cur?.id ? 'current' : ''}"><div class="num">${v.sort}</div><div><h3 style="margin:0;font-family:var(--font-body);font-size:.95rem">${title(v)}</h3></div>
+        <div class="row">${v.id === cur?.id ? html`<span class="chip info">${t('unicef.now_playing')}</span>` : html`<button class="btn secondary sm" type="button" data-act="uni-play" data-id="${v.id}">▶ ${t('unicef.play')}</button>`}</div></div>`)}`;
+  };
 
   return {
     html: html`<div id="uni-root"></div>`,
-    async mount(root) {
+    mount(root) {
       const box = root.querySelector('#uni-root');
-      actions['uni-open'] = (el) => { openModuleId = el.dataset.id; render(box); };
-      actions['uni-back'] = () => { openModuleId = null; render(box); };
-      forms['uni-quiz'] = async (form) => {
-        const btn = form.querySelector('[type=submit]'); setBusy(btn, true, t('common.wait'));
-        const answers = {};
-        for (const el of form.querySelectorAll('input[type=radio]:checked')) answers[el.name] = [el.value];
-        try {
-          const r = await api.submitQuiz(openModuleId, answers);
-          toast(r.passed ? t('unicef.quiz_passed_toast') : t('unicef.quiz_failed_toast', { score: r.score, total: r.total }), r.passed ? 'ok' : 'bad');
-          await api.refreshMe();
-          status = await api.myUnicefStatus();
-          render(box);
-        } catch (e) { toast(errText(e), 'bad'); setBusy(btn, false); }
-      };
-      await render(box);
+      const draw = () => { const m = status.find((x) => x.id === openId); box.innerHTML = (m ? moduleHtml(m) : listHtml()).s; };
+      actions['uni-open'] = (el) => { openId = el.dataset.id; playing = null; draw(); window.scrollTo(0, 0); };
+      actions['uni-back'] = () => { openId = null; playing = null; draw(); };
+      actions['uni-play'] = (el) => { playing = el.dataset.id; draw(); box.querySelector('#uni-player')?.play?.().catch(() => {}); };
+      draw();
     },
   };
 }

@@ -125,6 +125,9 @@ export const voidLetter = (id) => sb.rpc('void_letter', { p_id: id }).then(unwra
 export const myCoordinator = () => sb.rpc('my_coordinator').then(unwrap);
 export const coordinatorRoles = () => sb.rpc('coordinator_roles').then(unwrap);
 export const coordinatorShifts = () => sb.rpc('coordinator_shifts').then(unwrap);
+export const myCertificate = () => sb.rpc('my_certificate').then(unwrap);
+export const submitSurvey = (lang, answers) => sb.rpc('submit_survey', { p_lang: lang, p_answers: answers }).then(unwrap);
+export const setCertificateNames = (hy, en) => sb.rpc('set_certificate_names', { p_hy: hy, p_en: en }).then(unwrap);
 export const myBlueZone = () => sb.rpc('my_blue_zone').then(unwrap);
 export const answerBlueZone = (hasAccess) => sb.rpc('answer_blue_zone', { p_has_access: hasAccess }).then(unwrap);
 export const myShifts = () => sb.rpc('my_shifts').then(unwrap);
@@ -212,6 +215,7 @@ export const mgr = {
   roles: () => sb.rpc('manager_roles').then(unwrap),
   blueZone: () => sb.rpc('manager_blue_zone').then(unwrap),
   letters: () => sb.rpc('manager_letters').then(unwrap),
+  survey: () => sb.rpc('manager_survey').then(unwrap),
   setLetterNext: (n) => sb.rpc('manager_set_letter_next', { p_next: n }).then(unwrap),
   decideRole: (userId, role, status) => sb.rpc('decide_role_signup', { p_user: userId, p_role: role, p_status: status }).then(unwrap),
   shifts: () => sb.rpc('manager_shifts').then(unwrap),
