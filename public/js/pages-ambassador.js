@@ -343,6 +343,8 @@ async function creditHistoryView() {
     html: html`<div class="main-head"><h1>${t('nav.learning')}</h1></div>
       <div class="banner ok"><span>🎉</span><div><b>${t('learn.qualified')}</b> ${t('learn.qualified_text')}</div></div>
       ${certCard}
+      <div class="card" style="margin-top:1.2rem"><div class="row" style="align-items:center"><div><h2 style="margin:0;font-size:1.3rem">🎥 ${t('unicef.title')}</h2><p class="muted small" style="margin:.3rem 0 0">${t('unicef.card_text')}</p></div><div class="grow"></div>
+        <a class="btn secondary" href="/app/unicef" data-link>${t('unicef.open_course')}</a></div></div>
       <div class="card" style="margin-top:1.2rem"><div class="row" style="align-items:center"><h2 style="margin:0;font-size:1.3rem">${t('hist.title')}</h2><div class="grow"></div>
           <span class="chip credits">${t('hist.total', { n: progress.total })}</span>${wp.priority ? html`<span class="chip credits">★ ${t('webinar.priority_chip')}</span>` : ''}</div>
         ${cats.length || hasWebinar ? '' : html`<p class="muted" style="margin:.8rem 0 0">${t('hist.none')}</p>`}
